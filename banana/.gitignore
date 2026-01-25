@@ -1,0 +1,107 @@
+# OS
+.DS_Store
+Thumbs.db
+readme.md
+
+# Project documentation with sensitive info
+deployment-scripts-*.md
+fix-nginx-*.md
+SCRIPTS.md
+
+# Development helper scripts (one-time use)
+extract_*.py
+check_error*.py
+
+# Temporary bug fix documentation
+GEMINI3_*.md
+LOGIN_ISSUE_*.md
+DUPLICATE_API_CALL_REVIEW.md
+CHAT_JS_REVIEW.md
+PROJECT_REVIEW.md
+API_REFACTOR_*.md
+API_INTERFACES.md
+SD35_REVIEW.md
+RESOLUTION_PARAMETER_FLOW.md
+
+# SD config examples
+sd*.json
+
+# Logs
+logs/
+*.log
+*.out
+npm-debug.log*
+
+# Reference design files with embedded credentials
+*.mhtml
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Environment and secrets
+.env*
+!.env.example
+*.pem
+*.key
+backend/google-key.json
+backend/service-account*.json
+backend/*kubeconfig*
+*.p12
+*.crt
+*.csr
+*.pfx
+*.keystore
+*.jks
+
+# Local data and dumps
+*.db
+*.sqlite*
+*.bak
+*.dump
+*.sql
+
+# Test and coverage artifacts
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage*
+coverage/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# Node / build output
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Deployment scripts (local-use)
+deploy-*.sh
+redeploy-*.sh
+redeploy-*.py
+package-*.sh
+start*.sh
+restart.sh
+check-deployment.sh
+verify-backend.sh
+troubleshoot.sh
+build-and-deploy.sh
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

@@ -1,0 +1,13 @@
+# 排除构建缓存和临时文件
+# 注意：不排除 dist，因为我们需要源代码在 Dockerfile 中构建
+node_modules/.vite
+node_modules/.cache
+.vite
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+.env.local
+.env.*.local
+

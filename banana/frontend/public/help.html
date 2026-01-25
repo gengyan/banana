@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banana Pro 全网最全玩法攻略</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", 
+                        "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            background: #ffffff;
+            color: #1f2329;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #ffffff;
+        }
+        
+        h1 {
+            font-size: 24pt;
+            font-weight: bold;
+            margin: 20px 0 10px 0;
+            color: #1f2329;
+        }
+        
+        h2 {
+            font-size: 18pt;
+            font-weight: bold;
+            margin: 20px 0 10px 0;
+            color: #1f2329;
+        }
+        
+        h3 {
+            font-size: 13.5pt;
+            font-weight: bold;
+            margin: 15px 0 8px 0;
+            color: #1f2329;
+        }
+        
+        p {
+            font-size: 12pt;
+            margin: 10px 0;
+            text-align: left;
+            color: #1f2329;
+            line-height: 1.6;
+        }
+        
+        p[align="center"] {
+            text-align: center;
+        }
+        
+        /* Prompt区域样式 */
+        .prompt-container {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+            position: relative;
+        }
+        
+        .prompt-label {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #1f2329;
+            margin-bottom: 12px;
+        }
+        
+        .prompt-content {
+            background: #ffffff;
+            border: 1px solid #e5e6eb;
+            border-radius: 6px;
+            padding: 12px 16px;
+            font-size: 12pt;
+            color: #1f2329;
+            line-height: 1.8;
+            position: relative;
+            padding-right: 60px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .copy-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: #e5e6eb;
+            color: #1f2329;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            padding: 6px 16px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .copy-btn:hover {
+            background: #d1d5db;
+            border-color: #9ca3af;
+        }
+        
+        .copy-btn:active {
+            background: #c4c9d0;
+        }
+        
+        .copy-btn.copied {
+            background: #52c41a;
+            color: white;
+            border-color: #52c41a;
+        }
+        
+        /* 图片容器 - PC端2-3张一排 */
+        .image-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin: 16px 0;
+            max-width: 100%;
+            width: 100%;
+        }
+        
+        .image-container.double {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .image-container.single {
+            grid-template-columns: 1fr;
+        }
+        
+        .image-block {
+            text-align: center;
+            max-width: 100%;
+            overflow: hidden;
+        }
+        
+        .image-block img {
+            width: 100%;
+            height: auto;
+            display: block;
+            max-width: 100%;
+        }
+        
+        /* 单个图片块 */
+        .image-block-standalone {
+            margin: 16px 0;
+            text-align: center;
+            max-width: 100%;
+        }
+        
+        .image-block-standalone img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+            width: auto;
+        }
+        
+        /* 居中图片 */
+        .image-center {
+            text-align: center;
+            margin: 16px 0;
+            max-width: 100%;
+        }
+        
+        .image-center img {
+            max-width: 100%;
+            height: auto;
+            display: inline-block;
+            width: auto;
+        }
+        
+        /* 响应式设计 - 手机端 */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 20pt;
+            }
+            
+            h2 {
+                font-size: 16pt;
+            }
+            
+            p {
+                font-size: 11pt;
+            }
+            
+            /* 手机端：图片单列，全宽 */
+            .image-container {
+                grid-template-columns: 1fr !important;
+                gap: 12px;
+            }
+            
+            .image-block img,
+            .image-block-standalone img,
+            .image-center img {
+                width: 100%;
+            }
+        }
+        
+        /* 平板端：2列 */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .image-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <p>Banana Pro 全网最全玩法攻略</p>
+        <h1>模型介绍</h1>
+        <p>Nano-banana无论是换背景、改风格、调表情，还是更复杂的动作、服装、物体处理，几乎都能做到自然流畅、不留痕迹。不仅适合设计师，它对于电商卖家、自媒体创作者，甚至个人创作来说都是利器。</p>
+        <h1>国内可用平台：果捷AI</h1>
+        <h1>提示词的黄金法则</h1>
+        <p>Nano Banana 是一个“思考”模型，它不只是进行关键词匹配，还能理解意图、物理原理和构图。</p>
+        <p>这就意味着，如果要获得最佳的效果，不要使用传统的“标签堆砌”方式，而是要像一个创意总监一样思考和行动。</p>
+        <h3>编辑，而不是重新生成</h3>
+        <p>Nano Banana Pro 模型非常擅长对话式编辑，如果一个图像已经正确了 80%，那就不要再从头开始生成了，你只需要提出具体的变更就可以了。</p>
+        <h3>使用自然语言和完整句子</h3>
+        <p>与模型交流时，要像指导一位艺术家创作一样。使用正确的语法和描述性的形容词。</p>
+        <p>❌ 错误示范：“酷炫汽车，霓虹灯，城市，夜晚，8K”</p>
+        <p>✅ 正确示范：“一个电影风格的广角镜头，展现一辆未来主义跑车在雨夜的东京街道上飞驰。霓虹灯标志在湿漉漉的路面和跑车的金属车身上反射出光彩”</p>
+        <h3>要具体和清晰的描述</h3>
+        <p>模糊的提示词只会产生普通的结果，要定义主题、环境、光线和氛围。</p>
+        <p>❌ 描述主题：“一个女人”</p>
+        <p>✅ 描述主题：“一位穿着香奈儿复古套装的高雅老妇人”</p>
+        <p>✅ 描述质感： 描述纹理，比如“哑光表面”、“磨砂钢”、“柔软天鹅绒”、“皱巴巴的纸张”</p>
+        <p>提供上下文（为什么/ 为了谁）</p>
+        <p>Nano Banana Pro 是一个“思考”模型，给它上下文有助于它做出合理的艺术决策。</p>
+        <h1>Nano Banana Pro 玩法汇总</h1>
+        <h2>漫画翻译上色一条龙</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">给这个黑白漫画上色，并将台词翻译成中文</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '给这个黑白漫画上色，并将台词翻译成中文')">复制</button>
+        </div>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/001.png" alt="图片"></div>
+            <div class="image-block"><img src="images/002.png" alt="图片"></div>
+        </div>
+        <h2>模仿手写字迹完成图中数学题</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">完成图中数学题，并在题目中做出辅助线</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '完成图中数学题，并在题目中做出辅助线')">复制</button>
+        </div>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/003.png" alt="图片"></div>
+            <div class="image-block"><img src="images/004.png" alt="图片"></div>
+        </div>
+        <h2>生成论文Overview 图</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">根据以下论文内容，生成一篇高质量的顶会风格的overview图，展示整个的工作流程</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '根据以下论文内容，生成一篇高质量的顶会风格的overview图，展示整个的工作流程')">复制</button>
+        </div>
+        <div class="image-center"><img src="images/005.png" alt="图片"></div>
+        <h2>万物皆可手账</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">用中文手账形式展示在广州旅游的2 天行程安排，比例9:16</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '用中文手账形式展示在广州旅游的2 天行程安排，比例9:16')">复制</button>
+        </div>
+        <div class="image-center"><img src="images/006.png" alt="图片"></div>
+        <p>以手账形式生成一张自媒体写作入门流程的知识卡片，中文</p>
+        <div class="image-center"><img src="images/007.png" alt="图片"></div>
+        <h2>一键渲染</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">这是一张建筑平面设计图，请将其转化为3D模型</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '这是一张建筑平面设计图，请将其转化为3D模型')">复制</button>
+        </div>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/008.png" alt="图片"></div>
+            <div class="image-block"><img src="images/009.png" alt="图片"></div>
+        </div>
+        <p>将草图转化为实拍产品</p>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/010.png" alt="图片"></div>
+            <div class="image-block"><img src="images/011.png" alt="图片"></div>
+        </div>
+        <h2>小红书封面</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">生成居家健身减肥主题的爆款小红书笔记封面，尺寸3:4，内容："28天瘦了12斤，无器械居家燃脂操，躺瘦体质就是这么练出来的！" 生成考研备考经验主题的小红书笔记封面，尺寸3:4，内容："二战上岸985，我的考研逆袭笔记！从300分到400+的高效学习法大公开"</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '生成居家健身减肥主题的爆款小红书笔记封面，尺寸3:4，内容："28天瘦了12斤，无器械居家燃脂操，躺瘦体质就是这么练出来的！" 生成考研备考经验主题的小红书笔记封面，尺寸3:4，内容："二战上岸985，我的考研逆袭笔记！从300分到400+的高效学习法大公开"')">复制</button>
+        </div>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/012.png" alt="图片"></div>
+            <div class="image-block"><img src="images/013.png" alt="图片"></div>
+        </div>
+        <h2>海报设计/翻译一条龙</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">给瑞幸咖啡做一个圣诞节主题的中文活动海报 把这张海报翻译成英文版</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '给瑞幸咖啡做一个圣诞节主题的中文活动海报 把这张海报翻译成英文版')">复制</button>
+        </div>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/014.png" alt="图片"></div>
+            <div class="image-block"><img src="images/015.png" alt="图片"></div>
+        </div>
+        <p>将三个黄色和蓝色罐子上的所有英文文本翻译成韩语，同时保持其他内容不变。</p>
+        <div class="image-block-standalone"><img src="images/016.png" alt="图片"></div>
+        <h2>课件好帮手</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">参考中国语文课本，为古诗《静夜思》生成一页课文，诗、拼音、注释一应俱全。</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '参考中国语文课本，为古诗《静夜思》生成一页课文，诗、拼音、注释一应俱全。')">复制</button>
+        </div>
+        <div class="image-center"><img src="images/017.png" alt="图片"></div>
+        <p>请给桃花源记配一幅古画，并在顶部附带原文</p>
+        <div class="image-center"><img src="images/018.png" alt="图片"></div>
+        <p>生成平抛运动轨迹与速度位移分解示意图</p>
+        <div class="image-center"><img src="images/019.png" alt="图片"></div>
+        <p>一个三棱镜被分解成彩色光，又通过第二个三棱镜重新组合成白光的过程</p>
+        <div class="image-center"><img src="images/020.png" alt="图片"></div>
+        <h2>动漫生成：</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">生成像《足球小将》那种专业分镜结构、漫画叙事节奏、对白气泡、拟声词、画格布局、视角变化、动态镜头，但主角换成梅西和C罗在世界杯决赛巅峰对决的故事，中文对白。</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '生成像《足球小将》那种专业分镜结构、漫画叙事节奏、对白气泡、拟声词、画格布局、视角变化、动态镜头，但主角换成梅西和C罗在世界杯决赛巅峰对决的故事，中文对白。')">复制</button>
+        </div>
+        <div class="image-center"><img src="images/021.png" alt="图片"></div>
+        <p>请创作一个儿童图画故事封面，主角是一只小猫和一只小狗成为朋友的过程。配中英文简短对话，用不同角度展示两个主角，确保它们在每页中外观保持一致，画风温暖可爱，适合3岁孩子。</p>
+        <div class="image-center"><img src="images/022.png" alt="图片"></div>
+        <p>你现在需要进行小说配图素材制作，小说片段是：林薇僵住了。手电筒从手中滑落,在地面上打着旋,光束疯狂地扫过四周——锈蚀的水管、布满蛛网的天花板、角落里堆放的旧家具,最后停在了楼梯口。那里站着一个人影。一个湿透的人影,正一滴一滴地往下滴水</p>
+        <div class="image-center"><img src="images/023.png" alt="图片"></div>
+        <h2>多图融合</h2>
+        <div class="image-block-standalone"><img src="images/024.png" alt="图片"></div>
+        <div class="image-block-standalone"><img src="images/025.png" alt="图片"></div>
+        <h2>字体与创意样式</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">制作8个极简风格的标志，每个标志是一个富有表现力的单词，通过字母的视觉设计来传达信息或声音，以富有戏剧性的方式表现该单词的含义。构图：所有标志采用黑色扁平矢量风格，呈现在同一个白色背景上。</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '制作8个极简风格的标志，每个标志是一个富有表现力的单词，通过字母的视觉设计来传达信息或声音，以富有戏剧性的方式表现该单词的含义。构图：所有标志采用黑色扁平矢量风格，呈现在同一个白色背景上。')">复制</button>
+        </div>
+        <div class="image-block-standalone"><img src="images/026.png" alt="图片"></div>
+        <h1>一句话拯救废片</h1>
+        <h2>模仿妆容</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">为图一人物化上图二的妆，还保持图一的姿势。其余场景保持不变。</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '为图一人物化上图二的妆，还保持图一的姿势。其余场景保持不变。')">复制</button>
+        </div>
+        <p>效果演示</p>
+        <div class="image-container">
+            <div class="image-block"><img src="images/027.png" alt="图片"></div>
+            <div class="image-block"><img src="images/028.png" alt="图片"></div>
+            <div class="image-block"><img src="images/029.png" alt="图片"></div>
+        </div>
+        <h2>人像美化</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">对照片中的人物进行自然美化处理：皮肤白皙细腻，无瑕疵，脸型微微瘦削但不过分，五官立体，眼睛明亮有神，嘴唇饱满自然，整体效果自然美观，不失真实感。</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '对照片中的人物进行自然美化处理：皮肤白皙细腻，无瑕疵，脸型微微瘦削但不过分，五官立体，眼睛明亮有神，嘴唇饱满自然，整体效果自然美观，不失真实感。')">复制</button>
+        </div>
+        <p>效果演示</p>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/030.png" alt="图片"></div>
+            <div class="image-block"><img src="images/031.png" alt="图片"></div>
+        </div>
+        <h2>去掉脸上的痘痘</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">去掉脸上所有的痘痘</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '去掉脸上所有的痘痘')">复制</button>
+        </div>
+        <p>效果演示</p>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/032.png" alt="图片"></div>
+            <div class="image-block"><img src="images/033.png" alt="图片"></div>
+        </div>
+        <h2>去掉眼镜</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">去掉眼镜</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '去掉眼镜')">复制</button>
+        </div>
+        <p>效果演示</p>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/034.png" alt="图片"></div>
+            <div class="image-block"><img src="images/035.png" alt="图片"></div>
+        </div>
+        <h2>笑起来</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">让小女孩笑起来</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '让小女孩笑起来')">复制</button>
+        </div>
+        <p>效果演示</p>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/036.png" alt="图片"></div>
+            <div class="image-block"><img src="images/037.png" alt="图片"></div>
+        </div>
+        <h2>睁开眼睛</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">睁开眼睛</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '睁开眼睛')">复制</button>
+        </div>
+        <p>效果演示</p>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/038.png" alt="图片"></div>
+            <div class="image-block"><img src="images/039.png" alt="图片"></div>
+        </div>
+        <h2>换个显高的角度</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">将拍摄角度换位仰拍，显高</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '将拍摄角度换位仰拍，显高')">复制</button>
+        </div>
+        <p>效果展示</p>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/040.png" alt="图片"></div>
+            <div class="image-block"><img src="images/041.png" alt="图片"></div>
+        </div>
+        <h2>不会摆Pose？那就换姿势</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">给她换个优美时尚的姿势</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '给她换个优美时尚的姿势')">复制</button>
+        </div>
+        <p>效果展示：</p>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/042.png" alt="图片"></div>
+            <div class="image-block"><img src="images/043.png" alt="图片"></div>
+        </div>
+        <p>将照片中情侣姿势改为牵手一起走动，两人微笑，身体稍微前倾动作自然流畅，背景保持不变。</p>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/044.png" alt="图片"></div>
+            <div class="image-block"><img src="images/045.png" alt="图片"></div>
+        </div>
+        <h1>专业摄影照片</h1>
+        <h2>一寸证件照</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">请参考图1中的人物面部特征，并使用图2作为5:7纯白背景的比例参考，为我制作一张专业的证件照。请将照片中的姿态调整为正面朝向镜头，换上深色西装和白衬衫，并保持自然微笑。最终成片需要达到专业影棚的拍摄水准，具有佳能5D相机（Canon 5D）拍摄的高清质感。</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '请参考图1中的人物面部特征，并使用图2作为5:7纯白背景的比例参考，为我制作一张专业的证件照。请将照片中的姿态调整为正面朝向镜头，换上深色西装和白衬衫，并保持自然微笑。最终成片需要达到专业影棚的拍摄水准，具有佳能5D相机（Canon 5D）拍摄的高清质感。')">复制</button>
+        </div>
+        <p>效果演示</p>
+        <div class="image-container">
+            <div class="image-block"><img src="images/046.png" alt="图片"></div>
+            <div class="image-block"><img src="images/047.png" alt="图片"></div>
+            <div class="image-block"><img src="images/048.png" alt="图片"></div>
+        </div>
+        <h2>职业照</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">让图一的人参考图二的模特姿势生成全身的职业形象照。</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '让图一的人参考图二的模特姿势生成全身的职业形象照。')">复制</button>
+        </div>
+        <p>效果展示</p>
+        <div class="image-container">
+            <div class="image-block"><img src="images/049.png" alt="图片"></div>
+            <div class="image-block"><img src="images/050.png" alt="图片"></div>
+            <div class="image-block"><img src="images/051.png" alt="图片"></div>
+        </div>
+        <h2>九宫格证件照</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">为图中人物设计9 种风格差异显著且符合性别的发型（涵盖不同风格如日式和韩式等），清晰呈现人物搭配每种发型的面部及头部特写（突出发型与脸型的适配效果），所有特写镜头需保持一致的拍摄角度、光线和背景风格，最终整合为一张布局规整的九宫格图片，高清晰度，细节分明。</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '为图中人物设计9 种风格差异显著且符合性别的发型（涵盖不同风格如日式和韩式等），清晰呈现人物搭配每种发型的面部及头部特写（突出发型与脸型的适配效果），所有特写镜头需保持一致的拍摄角度、光线和背景风格，最终整合为一张布局规整的九宫格图片，高清晰度，细节分明。')">复制</button>
+        </div>
+        <p>效果展示：</p>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/052.png" alt="图片"></div>
+            <div class="image-block"><img src="images/053.png" alt="图片"></div>
+        </div>
+        <h1>老照片修复</h1>
+        <h2>老照片修复上色</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">修复这张老图片并上色，清除所有划痕、瑕疵、褪色、霉斑，还原清晰五官和更多细节。无过度锐化，画面干净自然。</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '修复这张老图片并上色，清除所有划痕、瑕疵、褪色、霉斑，还原清晰五官和更多细节。无过度锐化，画面干净自然。')">复制</button>
+        </div>
+        <p>效果演示：</p>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/054.png" alt="图片"></div>
+            <div class="image-block"><img src="images/055.png" alt="图片"></div>
+        </div>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/056.png" alt="图片"></div>
+            <div class="image-block"><img src="images/057.png" alt="图片"></div>
+        </div>
+        <h2>黑白图片上色</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">黑白照片专业上色，色彩遵循现实逻辑（如皮肤为自然暖米色、黑发偏深棕、白色衣物带轻微米白调），避免过饱和与色彩溢出；保留黑白照片的细腻质感，不破坏原有光影层次（阴影处色彩偏暗但不浑浊，高光处柔和不刺眼）；整体色调协调统一，呈现“自然不刻意” 的上色效果，仿佛原图即为彩色胶片拍摄。</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '黑白照片专业上色，色彩遵循现实逻辑（如皮肤为自然暖米色、黑发偏深棕、白色衣物带轻微米白调），避免过饱和与色彩溢出；保留黑白照片的细腻质感，不破坏原有光影层次（阴影处色彩偏暗但不浑浊，高光处柔和不刺眼）；整体色调协调统一，呈现“自然不刻意” 的上色效果，仿佛原图即为彩色胶片拍摄。')">复制</button>
+        </div>
+        <p>效果演示：</p>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/058.png" alt="图片"></div>
+            <div class="image-block"><img src="images/059.png" alt="图片"></div>
+        </div>
+        <h1>卡通场景</h1>
+        <h2>制作表情包</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">根据图片1制作九宫格表情包，有开心、悲伤、流泪、发火、恼怒、害羞等九个不一样的表情。</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '根据图片1制作九宫格表情包，有开心、悲伤、流泪、发火、恼怒、害羞等九个不一样的表情。')">复制</button>
+        </div>
+        <p>效果演示：</p>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/060.png" alt="图片"></div>
+            <div class="image-block"><img src="images/061.png" alt="图片"></div>
+        </div>
+        <h2>IP形象制作</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">基于提供的IP 形象，设计 9 种风格各异的姿势，涵盖站立、坐姿、动态动作（如跳跃、挥手）、静态姿态（如托腮、叉腰）等不同类型，每种姿势需贴合该 IP 的核心特征与性格特质，清晰呈现 IP 在各姿势下的整体形态与细节，最终输出包含9个姿势的九宫格图片。</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '基于提供的IP 形象，设计 9 种风格各异的姿势，涵盖站立、坐姿、动态动作（如跳跃、挥手）、静态姿态（如托腮、叉腰）等不同类型，每种姿势需贴合该 IP 的核心特征与性格特质，清晰呈现 IP 在各姿势下的整体形态与细节，最终输出包含9个姿势的九宫格图片。')">复制</button>
+        </div>
+        <p>效果演示：</p>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/062.png" alt="图片"></div>
+            <div class="image-block"><img src="images/063.png" alt="图片"></div>
+        </div>
+        <h2>风格化插画和贴纸</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">生成一张卡哇伊风格的贴纸，画的是一只快乐的小熊猫，戴着一顶小小的竹帽，正在咀嚼一片绿色的竹叶。设计采用粗大、清晰的轮廓线，赛璐璐风格的简单着色，以及鲜艳的调色板。背景必须为白色</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '生成一张卡哇伊风格的贴纸，画的是一只快乐的小熊猫，戴着一顶小小的竹帽，正在咀嚼一片绿色的竹叶。设计采用粗大、清晰的轮廓线，赛璐璐风格的简单着色，以及鲜艳的调色板。背景必须为白色')">复制</button>
+        </div>
+        <p>效果演示</p>
+        <div class="image-center"><img src="images/064.png" alt="图片"></div>
+        <h2>可爱温馨针织玩偶</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">一张特写、构图专业的照片，展示一个手工钩织的毛线玩偶被双手轻柔地托着。玩偶造型圆润，生成【图片1】人物的可爱Q版形象，色彩对比鲜明，细节丰富。持玩偶的双手自然、温柔，手指姿态清晰可见，皮肤质感与光影过渡自然，展现出温暖且真实的触感。背景轻微虚化，表现为室内环境，有温暖的木质桌面和从窗户洒入的自然光，营造出舒适、亲密的氛围。整体画面传达出精湛的工艺感与被珍视的温馨情绪。</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '一张特写、构图专业的照片，展示一个手工钩织的毛线玩偶被双手轻柔地托着。玩偶造型圆润，生成【图片1】人物的可爱Q版形象，色彩对比鲜明，细节丰富。持玩偶的双手自然、温柔，手指姿态清晰可见，皮肤质感与光影过渡自然，展现出温暖且真实的触感。背景轻微虚化，表现为室内环境，有温暖的木质桌面和从窗户洒入的自然光，营造出舒适、亲密的氛围。整体画面传达出精湛的工艺感与被珍视的温馨情绪。')">复制</button>
+        </div>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/065.png" alt="图片"></div>
+            <div class="image-block"><img src="images/066.png" alt="图片"></div>
+        </div>
+        <h2>8位像素图标</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">参考图片1创建一个极简主义的 8 位像素风格的标志，居中放置在纯白背景上。使用有限的复古调色板，搭配像素化细节、锐利边缘和干净的块状形态。标志应简洁、具有标志性，并能在像素艺术风格中清晰识别——灵感来自经典街机游戏美学。</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '参考图片1创建一个极简主义的 8 位像素风格的标志，居中放置在纯白背景上。使用有限的复古调色板，搭配像素化细节、锐利边缘和干净的块状形态。标志应简洁、具有标志性，并能在像素艺术风格中清晰识别——灵感来自经典街机游戏美学。')">复制</button>
+        </div>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/067.png" alt="图片"></div>
+            <div class="image-block"><img src="images/068.png" alt="图片"></div>
+        </div>
+        <h2>线稿上色</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">这张照片是一个IP形象。请保持原图纸的轮廓一致，并给这张图纸上色。配色要求高质量，具有自然、有质感的效果，整体画面色彩丰富、风格多样的效果。</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '这张照片是一个IP形象。请保持原图纸的轮廓一致，并给这张图纸上色。配色要求高质量，具有自然、有质感的效果，整体画面色彩丰富、风格多样的效果。')">复制</button>
+        </div>
+        <p>效果展示</p>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/069.png" alt="图片"></div>
+            <div class="image-block"><img src="images/070.png" alt="图片"></div>
+        </div>
+        <h1>电商场景</h1>
+        <h2>3D产品剖面图</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">Ultra-detailed exploded view of a product, metallic parts and electronic components floating in mid-air, perfectly aligned, revealing inner structure, futuristic technology aesthetic, 8K resolution, soft cinematic lighting, highly realistic.</div>
+            <button class="copy-btn" onclick="copyPrompt(this, 'Ultra-detailed exploded view of a product, metallic parts and electronic components floating in mid-air, perfectly aligned, revealing inner structure, futuristic technology aesthetic, 8K resolution, soft cinematic lighting, highly realistic.')">复制</button>
+        </div>
+        <p>效果演示</p>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/071.png" alt="图片"></div>
+            <div class="image-block"><img src="images/072.png" alt="图片"></div>
+        </div>
+        <h2>识别拆分衣物</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">在一张平铺照片上，展示图中涉及的所有服装单品</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '在一张平铺照片上，展示图中涉及的所有服装单品')">复制</button>
+        </div>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/073.png" alt="图片"></div>
+            <div class="image-block"><img src="images/074.png" alt="图片"></div>
+        </div>
+        <p>专业产品拍摄</p>
+        <p>A photorealistic [视角] of [主体], [动作或表情], set in [环境]. The scene is illuminated by [光线描述], creating a [氛围] atmosphere. Captured with a [拍摄焦段], emphasizing [关键纹理和细节]. The image should be in a [画幅比例] format.</p>
+        <h2>簇绒地毯</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">创建一张图像，展示一个彩色、手工簇绒的地毯，形状为[图片1] ，铺设在一个简约的地板背景上。地毯设计大胆、俏皮，具有柔软蓬松的质感和粗线条的细节。从上方俯拍，使用自然光照，整体风格略带古怪的 DIY 美感。色彩鲜艳，轮廓卡通化，材质具触感且温馨舒适——类似于手工簇绒艺术地毯。</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '创建一张图像，展示一个彩色、手工簇绒的地毯，形状为[图片1] ，铺设在一个简约的地板背景上。地毯设计大胆、俏皮，具有柔软蓬松的质感和粗线条的细节。从上方俯拍，使用自然光照，整体风格略带古怪的 DIY 美感。色彩鲜艳，轮廓卡通化，材质具触感且温馨舒适——类似于手工簇绒艺术地毯。')">复制</button>
+        </div>
+        <p>效果演示：</p>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/075.png" alt="图片"></div>
+            <div class="image-block"><img src="images/076.png" alt="图片"></div>
+        </div>
+        <h2>多海报参考融合</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">图一的女孩拿着图二的面霜，往脸上涂抹，帮我融合成一张海报。</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '图一的女孩拿着图二的面霜，往脸上涂抹，帮我融合成一张海报。')">复制</button>
+        </div>
+        <p>效果展示：</p>
+        <div class="image-container">
+            <div class="image-block"><img src="images/077.png" alt="图片"></div>
+            <div class="image-block"><img src="images/078.png" alt="图片"></div>
+            <div class="image-block"><img src="images/079.png" alt="图片"></div>
+        </div>
+        <h2>产品设计</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">把图一贴在图二易拉罐上，并放在极简设计的布景中，专业摄影。</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '把图一贴在图二易拉罐上，并放在极简设计的布景中，专业摄影。')">复制</button>
+        </div>
+        <p>效果展示：</p>
+        <div class="image-container">
+            <div class="image-block"><img src="images/080.png" alt="图片"></div>
+            <div class="image-block"><img src="images/081.png" alt="图片"></div>
+            <div class="image-block"><img src="images/082.png" alt="图片"></div>
+        </div>
+        <h2>虚拟试衣</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">让图片1中的人穿上图中所有的服装（包括上衣、下装、外套等），并搭配图中所有的配饰（如帽子、围巾、首饰、包包、鞋子等），确保所有服饰和配饰都完整穿戴在人物身上，整体搭配自然协调，呈现出完整的造型效果，细节清晰。</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '让图片1中的人穿上图中所有的服装（包括上衣、下装、外套等），并搭配图中所有的配饰（如帽子、围巾、首饰、包包、鞋子等），确保所有服饰和配饰都完整穿戴在人物身上，整体搭配自然协调，呈现出完整的造型效果，细节清晰。')">复制</button>
+        </div>
+        <p>效果展示：</p>
+        <div class="image-container">
+            <div class="image-block"><img src="images/083.png" alt="图片"></div>
+            <div class="image-block"><img src="images/084.png" alt="图片"></div>
+            <div class="image-block"><img src="images/085.png" alt="图片"></div>
+            <div class="image-block"><img src="images/086.png" alt="图片"></div>
+            <div class="image-block"><img src="images/087.png" alt="图片"></div>
+        </div>
+        <h1>地表最强P图</h1>
+        <h2>添加和移除元素</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">基于我提供的图片，请[添加/移除/修改] 场景中的 [元素]。确保调整后的效果符合我的融合要求。</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '基于我提供的图片，请[添加/移除/修改] 场景中的 [元素]。确保调整后的效果符合我的融合要求。')">复制</button>
+        </div>
+        <p>效果演示：</p>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/088.png" alt="图片"></div>
+            <div class="image-block"><img src="images/089.png" alt="图片"></div>
+        </div>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/090.png" alt="图片"></div>
+            <div class="image-block"><img src="images/091.png" alt="图片"></div>
+        </div>
+        <h2>人物合影</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">让四个人在海边搭肩合影</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '让四个人在海边搭肩合影')">复制</button>
+        </div>
+        <div class="image-container">
+            <div class="image-block"><img src="images/092.png" alt="图片"></div>
+            <div class="image-block"><img src="images/093.png" alt="图片"></div>
+            <div class="image-block"><img src="images/094.png" alt="图片"></div>
+        </div>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/095.png" alt="图片"></div>
+            <div class="image-block"><img src="images/096.png" alt="图片"></div>
+        </div>
+        <h2>去除水印</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">请去除图片中所有水印内容，且修复水印区域下面的背景，使其与周围环境自然融合，不留任何水印痕迹，整体画面干净整洁。</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '请去除图片中所有水印内容，且修复水印区域下面的背景，使其与周围环境自然融合，不留任何水印痕迹，整体画面干净整洁。')">复制</button>
+        </div>
+        <p>效果演示：</p>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/097.png" alt="图片"></div>
+            <div class="image-block"><img src="images/098.png" alt="图片"></div>
+        </div>
+        <h1>标注生成</h1>
+        <h2>火柴人/线稿变换姿势</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">将图1中的角色替换为图2中的姿势</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '将图1中的角色替换为图2中的姿势')">复制</button>
+        </div>
+        <div class="image-container">
+            <div class="image-block"><img src="images/099.png" alt="图片"></div>
+            <div class="image-block"><img src="images/100.png" alt="图片"></div>
+            <div class="image-block"><img src="images/101.png" alt="图片"></div>
+        </div>
+        <p>让图1和图2的两个人以图3中的姿势激烈战斗，加入丰富的视觉背景和环境细节，强调场景中的互动与紧张氛围</p>
+        <div class="image-center"><img src="images/102.png" alt="图片"></div>
+        <p>保留图片1中人物的原始风格，但摆出图片2中的姿势，姿势完全一样</p>
+        <div class="image-center"><img src="images/103.png" alt="图片"></div>
+        <h2>封面还原</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">使用现代字体和真实风格为这张手绘图像创建YouTube 缩略图</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '使用现代字体和真实风格为这张手绘图像创建YouTube 缩略图')">复制</button>
+        </div>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/104.png" alt="图片"></div>
+            <div class="image-block"><img src="images/105.png" alt="图片"></div>
+        </div>
+        <h1>现实世界的推理</h1>
+        <p>Gemini 2.5 Flash 它不只是单纯地“画画”，而是可以“理解”这个世界了。 可以推断出图像中显示的时刻之前或之后发生的事情。 比如，下面这张“玻璃瓶从桌上掉向地面”的图。 然后，你问它：“想象一下接下来会发生什么给我生成接下来的画面”它竟然能准确预判出“瓶子会摔碎”，并生成了破碎的瞬间！</p>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/106.png" alt="图片"></div>
+            <div class="image-block"><img src="images/107.png" alt="图片"></div>
+        </div>
+        <h2>时间理解</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">生成这张图片十分钟后场景的图片</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '生成这张图片十分钟后场景的图片')">复制</button>
+        </div>
+        <p>效果展示：</p>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/108.png" alt="图片"></div>
+            <div class="image-block"><img src="images/109.png" alt="图片"></div>
+        </div>
+        <p>生成这张图片十年后场景的图片</p>
+        <p>效果展示：</p>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/110.png" alt="图片"></div>
+            <div class="image-block"><img src="images/111.png" alt="图片"></div>
+        </div>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/112.png" alt="图片"></div>
+            <div class="image-block"><img src="images/113.png" alt="图片"></div>
+        </div>
+        <h2>机位/视角变化</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">从鸟瞰视角生成这张图片 从背后视角生成这张图片 从侧面视角生成这张图片 从特写视角生成这张图片</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '从鸟瞰视角生成这张图片 从背后视角生成这张图片 从侧面视角生成这张图片 从特写视角生成这张图片')">复制</button>
+        </div>
+        <p>效果演示：</p>
+        <div class="image-container">
+            <div class="image-block"><img src="images/114.png" alt="图片"></div>
+            <div class="image-block"><img src="images/115.png" alt="图片"></div>
+            <div class="image-block"><img src="images/116.png" alt="图片"></div>
+            <div class="image-block"><img src="images/117.png" alt="图片"></div>
+            <div class="image-block"><img src="images/118.png" alt="图片"></div>
+        </div>
+        <h2>食材原料展示</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">食材平铺拍摄，将成品菜肴所用的原材料整齐地摆放在干净的厨房或木质背景上，食材新鲜且未经加工，配料被放在碗和盘子里，佐料瓶也陈列其中，呈现优雅的静物美食摄影风格，从正上方或主视角拍摄，采用明亮的自然光。</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '食材平铺拍摄，将成品菜肴所用的原材料整齐地摆放在干净的厨房或木质背景上，食材新鲜且未经加工，配料被放在碗和盘子里，佐料瓶也陈列其中，呈现优雅的静物美食摄影风格，从正上方或主视角拍摄，采用明亮的自然光。')">复制</button>
+        </div>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/119.png" alt="图片"></div>
+            <div class="image-block"><img src="images/120.png" alt="图片"></div>
+        </div>
+        <h1>建筑设计</h1>
+        <h2>更改墙面颜色</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">将沙发背后的墙面刷为浅红色</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '将沙发背后的墙面刷为浅红色')">复制</button>
+        </div>
+        <p>效果展示：</p>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/121.png" alt="图片"></div>
+            <div class="image-block"><img src="images/122.png" alt="图片"></div>
+        </div>
+        <h2>家具融合打造新家</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">结合图片中的软装元素（包括家具、布艺、装饰摆件等），将其合理搭配组合，生成一个风格统一、布局协调的完整空间效果。需体现各软装元素的色彩呼应、材质搭配及整体氛围，呈现出自然融合的室内场景，高还原度，细节清晰。</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '结合图片中的软装元素（包括家具、布艺、装饰摆件等），将其合理搭配组合，生成一个风格统一、布局协调的完整空间效果。需体现各软装元素的色彩呼应、材质搭配及整体氛围，呈现出自然融合的室内场景，高还原度，细节清晰。')">复制</button>
+        </div>
+        <p>效果展示：</p>
+        <div class="image-container">
+            <div class="image-block"><img src="images/123.png" alt="图片"></div>
+            <div class="image-block"><img src="images/124.png" alt="图片"></div>
+            <div class="image-block"><img src="images/125.png" alt="图片"></div>
+            <div class="image-block"><img src="images/126.png" alt="图片"></div>
+        </div>
+        <p>此时你还可以变换视角，如：从鸟瞰视角生成这张图片</p>
+        <div class="image-center"><img src="images/127.png" alt="图片"></div>
+        <h1>生活创意</h1>
+        <h2>生成手办</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">Create a 1/7 scale commercialized figurine of the characters in the picture, in a realistic style, in a real environment. The figurine is placed on a computer desk. The figurine has a round transparent acrylic base, with no text on the base. The content on the computer screen is a 3D modeling process of this figurine. Next to the computer screen is a toy packaging box, designed in a style reminiscent of high-quality collectible figures, printed with original artwork. The packaging features two-dimensional flat illustrations.</div>
+            <button class="copy-btn" onclick="copyPrompt(this, 'Create a 1/7 scale commercialized figurine of the characters in the picture, in a realistic style, in a real environment. The figurine is placed on a computer desk. The figurine has a round transparent acrylic base, with no text on the base. The content on the computer screen is a 3D modeling process of this figurine. Next to the computer screen is a toy packaging box, designed in a style reminiscent of high-quality collectible figures, printed with original artwork. The packaging features two-dimensional flat illustrations.')">复制</button>
+        </div>
+        <p>效果演示：</p>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/128.png" alt="图片"></div>
+            <div class="image-block"><img src="images/129.png" alt="图片"></div>
+        </div>
+        <h2>定制Q版钥匙串</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">一张特写照片，展示一个被人手握住的可爱多彩钥匙串。钥匙串的造型为[图片1] 的 Q 版风格。钥匙串由柔软橡胶材质制成，带有粗黑描边，连接在一个小巧的银色钥匙圈上，背景为中性色调。</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '一张特写照片，展示一个被人手握住的可爱多彩钥匙串。钥匙串的造型为[图片1] 的 Q 版风格。钥匙串由柔软橡胶材质制成，带有粗黑描边，连接在一个小巧的银色钥匙圈上，背景为中性色调。')">复制</button>
+        </div>
+        <p>效果演示：</p>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/130.png" alt="图片"></div>
+            <div class="image-block"><img src="images/131.png" alt="图片"></div>
+        </div>
+        <h2>真人仿Cosplay（需要抽卡）</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">让图一的人物cosplay图二的角色，服饰、妆容、道具和图二一致</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '让图一的人物cosplay图二的角色，服饰、妆容、道具和图二一致')">复制</button>
+        </div>
+        <p>效果演示：</p>
+        <div class="image-container">
+            <div class="image-block"><img src="images/132.png" alt="图片"></div>
+            <div class="image-block"><img src="images/133.png" alt="图片"></div>
+            <div class="image-block"><img src="images/134.png" alt="图片"></div>
+        </div>
+        <h2>展示不同年代的你</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">生成宝丽来风格的照片，并以20世纪80年代和90年代标志性风格呈现</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '生成宝丽来风格的照片，并以20世纪80年代和90年代标志性风格呈现')">复制</button>
+        </div>
+        <p>效果演示：</p>
+        <div class="image-container">
+            <div class="image-block"><img src="images/135.png" alt="图片"></div>
+            <div class="image-block"><img src="images/136.png" alt="图片"></div>
+            <div class="image-block"><img src="images/137.png" alt="图片"></div>
+        </div>
+        <h2>和巨星同场竞技</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">让图片1中的人和梅西一起踢足球。</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '让图片1中的人和梅西一起踢足球。')">复制</button>
+        </div>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/138.png" alt="图片"></div>
+            <div class="image-block"><img src="images/139.png" alt="图片"></div>
+        </div>
+        <h2>博物馆拍摄自画像</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">在博物馆里自拍一张照片，背景是一件艺术品，其内容是根据图片绘制的素描头像。前景类似于上传的图片，男子正拿着手机自拍，拍摄角度不要挡住后面的艺术品。</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '在博物馆里自拍一张照片，背景是一件艺术品，其内容是根据图片绘制的素描头像。前景类似于上传的图片，男子正拿着手机自拍，拍摄角度不要挡住后面的艺术品。')">复制</button>
+        </div>
+        <p>效果演示</p>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/140.png" alt="图片"></div>
+            <div class="image-block"><img src="images/141.png" alt="图片"></div>
+        </div>
+        <h2>绘画过程图</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">为这张图绘制如下场景，一个画师正在一个粗犷，略显凌乱的画室画一张人物速写，画板右上角夹着如图所示的照片，画板上正在绘制这张图的速写，第一人称视角，看到手臂和铅笔。分别生成三张图，每张图位置略有区别，画像内容逐渐丰富，类似绘画创作的过程图。</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '为这张图绘制如下场景，一个画师正在一个粗犷，略显凌乱的画室画一张人物速写，画板右上角夹着如图所示的照片，画板上正在绘制这张图的速写，第一人称视角，看到手臂和铅笔。分别生成三张图，每张图位置略有区别，画像内容逐渐丰富，类似绘画创作的过程图。')">复制</button>
+        </div>
+        <p>效果演示</p>
+        <div class="image-container">
+            <div class="image-block"><img src="images/142.png" alt="图片"></div>
+            <div class="image-block"><img src="images/143.png" alt="图片"></div>
+            <div class="image-block"><img src="images/144.png" alt="图片"></div>
+            <div class="image-block"><img src="images/145.png" alt="图片"></div>
+        </div>
+        <h2>手绘转三维模型</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">将这张手绘稿，转成一个轴测图视角的三维实体模型，直接根据这张图片为我生成一个轴测图视角的三维渲染模型。</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '将这张手绘稿，转成一个轴测图视角的三维实体模型，直接根据这张图片为我生成一个轴测图视角的三维渲染模型。')">复制</button>
+        </div>
+        <p>效果展示：</p>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/146.png" alt="图片"></div>
+            <div class="image-block"><img src="images/147.png" alt="图片"></div>
+        </div>
+        <h2>三维模型乐高化</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">基于图1，将其转变为乐高玩具模型，真实的放在桌子上，桌子边上有乐高玩具的盒子与说明书。这个建筑正在安装过程中，有一半的模型还没有拼装好，零件散乱的放置在桌子上</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '基于图1，将其转变为乐高玩具模型，真实的放在桌子上，桌子边上有乐高玩具的盒子与说明书。这个建筑正在安装过程中，有一半的模型还没有拼装好，零件散乱的放置在桌子上')">复制</button>
+        </div>
+        <p>效果展示：</p>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/148.png" alt="图片"></div>
+            <div class="image-block"><img src="images/149.png" alt="图片"></div>
+        </div>
+        <h1>地图建模</h1>
+        <h2>生成等距模型</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">仅制作[物体] 的等距模型。</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '仅制作[物体] 的等距模型。')">复制</button>
+        </div>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/150.png" alt="图片"></div>
+            <div class="image-block"><img src="images/151.png" alt="图片"></div>
+        </div>
+        <h2>乐高城市景观</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">创建一幅高度精细且色彩鲜艳的乐高版【上海外滩】景象。前景呈现经典的【外滩历史建筑群】，用乐高砖块精致还原西式与新古典主义风格的建筑立面，包括钟楼、穹顶、柱廊等细节。乐高小人们正在沿江漫步、拍照、观光，街道两旁停靠着经典样式的乐高汽车。背景是【壮观的黄浦江】，以蓝色半透明乐高砖拼接，【江面上有乐高渡轮和游览船。对岸的浦东陆家嘴高楼林立，包括东方明珠塔、上海中心、金茂大厦和环球金融中心】，这些超现代乐高摩天大楼色彩丰富、造型逼真。天空为乐高明亮蓝色，点缀少量白色乐高积木云朵，整体呈现充满活力与现代感的视觉效果。</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '创建一幅高度精细且色彩鲜艳的乐高版【上海外滩】景象。前景呈现经典的【外滩历史建筑群】，用乐高砖块精致还原西式与新古典主义风格的建筑立面，包括钟楼、穹顶、柱廊等细节。乐高小人们正在沿江漫步、拍照、观光，街道两旁停靠着经典样式的乐高汽车。背景是【壮观的黄浦江】，以蓝色半透明乐高砖拼接，【江面上有乐高渡轮和游览船。对岸的浦东陆家嘴高楼林立，包括东方明珠塔、上海中心、金茂大厦和环球金融中心】，这些超现代乐高摩天大楼色彩丰富、造型逼真。天空为乐高明亮蓝色，点缀少量白色乐高积木云朵，整体呈现充满活力与现代感的视觉效果。')">复制</button>
+        </div>
+        <p>效果展示</p>
+        <div class="image-center"><img src="images/152.png" alt="图片"></div>
+        <h2>由地图截图生成建模</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">请以尽可能接近真实照片的方式，展示我当前位置向东的景色。请使其看起来像是从该位置拍摄的，并忠实地展现建筑物和其他细节。</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '请以尽可能接近真实照片的方式，展示我当前位置向东的景色。请使其看起来像是从该位置拍摄的，并忠实地展现建筑物和其他细节。')">复制</button>
+        </div>
+        <p>效果展示</p>
+        <div class="image-container double">
+            <div class="image-block"><img src="images/153.png" alt="图片"></div>
+            <div class="image-block"><img src="images/154.png" alt="图片"></div>
+        </div>
+        <h1>一些小Tips - 稀有同学</h1>
+        <h2>如何提高出好图的概率？</h2>
+        <div class="prompt-container">
+            <div class="prompt-label">提示词：</div>
+            <div class="prompt-content">若要提高抽出好卡的概率，除了提示词要准确外，还要确保原图中的背景简单，最好为纯色，其次是图中的主体数量建议不要超过3个，单个主体是最佳的。 尤其是使用Nano Banana将照片转为手办照片时，尽量使用主体单一，背景简单，且主体至少有大半个身子，这样最终抽出的结果往往是令人满意的，如下图所示，我还对其分辨率进行了增强。</div>
+            <button class="copy-btn" onclick="copyPrompt(this, '若要提高抽出好卡的概率，除了提示词要准确外，还要确保原图中的背景简单，最好为纯色，其次是图中的主体数量建议不要超过3个，单个主体是最佳的。 尤其是使用Nano Banana将照片转为手办照片时，尽量使用主体单一，背景简单，且主体至少有大半个身子，这样最终抽出的结果往往是令人满意的，如下图所示，我还对其分辨率进行了增强。')">复制</button>
+        </div>
+    </div>
+    <script>
+        // 复制功能
+        function copyPrompt(button, text) {
+            // 创建临时文本区域
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            
+            try {
+                document.execCommand('copy');
+                // 更新按钮状态
+                const originalText = button.textContent;
+                button.textContent = '已复制';
+                button.classList.add('copied');
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.classList.remove('copied');
+                }, 2000);
+            } catch (err) {
+                console.error('复制失败:', err);
+                alert('复制失败，请手动复制');
+            }
+            
+            document.body.removeChild(textarea);
+        }
+        
+        // 页面加载后，为所有prompt添加复制按钮
+        document.addEventListener('DOMContentLoaded', function() {
+            const promptContainers = document.querySelectorAll('.prompt-container');
+            promptContainers.forEach(container => {
+                const contentDiv = container.querySelector('.prompt-content');
+                if (contentDiv) {
+                    const text = contentDiv.textContent.trim();
+                    const copyBtn = container.querySelector('.copy-btn');
+                    if (copyBtn) {
+                        copyBtn.onclick = function() {
+                            copyPrompt(this, text);
+                        };
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

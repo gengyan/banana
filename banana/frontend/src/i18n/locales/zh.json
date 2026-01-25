@@ -1,0 +1,130 @@
+{
+  "app": {
+    "name": "果捷",
+    "slogan": "修图，就用果捷AI"
+  },
+  "nav": {
+    "login": "登录",
+    "register": "注册",
+    "language": "语言",
+    "logout": "退出登录",
+    "manual": "使用手册",
+    "purchase": "立即购买",
+    "customerService": "客户服务",
+    "profile": "个人资料",
+    "userManagement": "用户管理"
+  },
+  "home": {
+    "chatMode": "聊天模式",
+    "bananaMode": "Banana",
+    "bananaProMode": "Banana Pro",
+    "sd35Mode": "SD3.5",
+    "placeholder": "请输入您的需求...",
+    "submit": "提交",
+    "auto": "自动",
+    "temp": "温度",
+    "selectImage": "选择图片",
+    "inspirationDiscovery": "灵感发现"
+  },
+  "login": {
+    "title": "果捷",
+    "welcome": "欢迎回来",
+    "email": "邮箱",
+    "password": "密码",
+    "emailPlaceholder": "请输入邮箱",
+    "passwordPlaceholder": "请输入密码",
+    "login": "登录",
+    "register": "注册",
+    "backToHome": "返回首页"
+  },
+  "working": {
+    "title": "工作区",
+    "placeholder": "请输入消息..."
+  },
+  "modal": {
+    "close": "关闭",
+    "download": "下载图片",
+    "error": "抱歉，发生了错误。请稍后重试。",
+    "promptOnly": "图片生成提示词",
+    "imageGenerating": "图片数据准备中...",
+    "imageServiceRequired": "提示：当前显示的是图片生成提示词。要显示实际图片，需要集成图片生成服务（如 DALL-E、Stable Diffusion 等）。",
+    "noErrorInfo": "无错误信息"
+  },
+  "error": {
+    "imageGenerationFailed": "图片生成失败",
+    "checkBackendLogs": "请查看后端控制台的详细日志以获取更多诊断信息。"
+  },
+  "imageEditor": {
+    "title": "编辑图片",
+    "scale": "缩放",
+    "hint": "提示：拖动鼠标选择裁切区域，使用滑块调整缩放",
+    "hintSquare": "提示：拖动裁切框可以移动位置，拖动空白区域创建新的裁切区域，使用滑块调整缩放",
+    "cancel": "取消",
+    "save": "保存"
+  },
+  "profile": {
+    "title": "我的信息",
+    "account": "账号",
+    "nickname": "昵称",
+    "gender": "性别",
+    "age": "年龄",
+    "genderMale": "男",
+    "genderFemale": "女",
+    "genderOther": "其他",
+    "genderPlaceholder": "请选择",
+    "agePlaceholder": "请输入年龄",
+    "avatarHint": "点击图标更换头像",
+    "save": "保存修改",
+    "saving": "保存中...",
+    "updateSuccess": "信息更新成功"
+  },
+  "projectLibrary": {
+    "title": "会话历史",
+    "subtitle": "查看和管理您的所有聊天会话",
+    "loading": "加载中...",
+    "noProjects": "暂无项目",
+    "noProjectsHint": "开始创建您的第一个项目吧",
+    "clearHistory": "清空历史记录",
+    "clearing": "清空中...",
+    "clearConfirm": "确定要清空所有历史记录吗？此操作不可恢复，将删除所有项目和图片。",
+    "clearSuccess": "所有历史记录已清空",
+    "clearError": "清空历史记录失败，请检查控制台查看详细信息",
+    "deleteConfirm": "确定要删除这个项目吗？",
+    "deleteError": "删除项目失败",
+    "deleteProject": "删除项目",
+    "updatedAt": "更新于",
+    "me": "我",
+    "ai": "AI",
+    "image": "[图片]"
+  },
+  "customerService": {
+    "title": "客户服务",
+    "subtitle": "我们随时为您提供帮助和支持",
+    "feedbackLabel": "反馈意见",
+    "feedbackPlaceholder": "请输入您的反馈意见...",
+    "contactLabel": "联系方式",
+    "contactPlaceholder": "请输入您的微信号、QQ号或手机号",
+    "submit": "提交反馈",
+    "submitting": "提交中...",
+    "submitSuccess": "反馈提交成功，我们会尽快与您联系！",
+    "submitError": "提交失败，请稍后重试",
+    "feedbackRequired": "反馈意见不能为空",
+    "contactRequired": "联系方式不能为空",
+    "contactService": "联系客服",
+    "scanQRCode": "扫描二维码添加客服微信",
+    "qrCode": "客服微信二维码",
+    "qrHint": "使用微信扫一扫添加客服微信",
+    "submitFeedback": "提交反馈",
+    "myFeedbacks": "我的反馈记录",
+    "loading": "加载中...",
+    "noFeedbacks": "暂无反馈记录",
+    "replied": "已回复",
+    "hasReply": "已回复",
+    "feedbackDetail": "反馈详情",
+    "you": "您",
+    "service": "客服",
+    "contact": "联系方式",
+    "noReplyYet": "客服尚未回复，请耐心等待"
+  }
+}
+

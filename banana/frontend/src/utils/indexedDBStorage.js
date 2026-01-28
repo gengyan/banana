@@ -966,3 +966,171 @@ export async function createSampleProject() {
   // 暂时返回 null，避免重复创建
   return null
 }
+
+// ==================== Blob 图片存储（新架构）====================
+
+/**
+ * 保存图片 Blob 到 IndexedDB
+ * @param {Blob} blob - 图片 Blob 对象
+ * @param {Object} metadata - 元数据
+ * @returns {Promise<string>} imageId
+ */
+export async function saveImageBlob(blob, metadata = {}) {
+  try {
+    if (!blob || !(blob instanceof Blob)) {
+      throw new Error('输入不是有效的 Blob 对象')
+    }
+
+    const database = await getDB()
+    const imageId = `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    
+    return new Promise((resolve, reject) => {
+      const transaction = database.transaction([STORE_IMAGES], 'readwrite')
+      const store = transaction.objectStore(STORE_IMAGES)
+      
+      const imageRecord = {
+        id: imageId,
+        blob: blob,  // 直接存储 Blob 对象
+        format: metadata.format || 'jpeg',
+        width: metadata.width || 0,
+        height: metadata.height || 0,
+        modelVersion: metadata.modelVersion || '3_pro',
+        timestamp: Date.now(),
+        projectId: metadata.projectId || null,
+        messageId: metadata.messageId || null,
+        mimeType: metadata.mimeType || blob.type || 'image/jpeg'
+      }
+      
+      const request = store.add(imageRecord)
+      
+      request.onsuccess = () => {
+        console.log(`✅ [saveImageBlob] 图片已存储到 IndexedDB: ${imageId}`)
+        console.log(`   大小: ${(blob.size / 1024).toFixed(2)} KB`)
+        console.log(`   格式: ${imageRecord.format}`)
+        console.log(`   尺寸: ${imageRecord.width}x${imageRecord.height}`)
+        resolve(imageId)
+      }
+      
+      request.onerror = () => {
+        console.error('❌ [saveImageBlob] 存储失败:', request.error)
+        reject(new Error('存储图片 Blob 失败: ' + request.error))
+      }
+    })
+  } catch (e) {
+    console.error('❌ [saveImageBlob] 异常:', e)
+    throw new Error('存储图片 Blob 失败: ' + e.message)
+  }
+}
+
+/**
+ * 从 IndexedDB 读取图片 Blob
+ * @param {string} imageId
+ * @returns {Promise<Blob>}
+ */
+export async function getImageBlob(imageId) {
+  try {
+    if (!imageId) {
+      throw new Error('imageId 不能为空')
+    }
+
+    const database = await getDB()
+    
+    return new Promise((resolve, reject) => {
+      const transaction = database.transaction([STORE_IMAGES], 'readonly')
+      const store = transaction.objectStore(STORE_IMAGES)
+      const request = store.get(imageId)
+      
+      request.onsuccess = () => {
+        const record = request.result
+        if (record && record.blob) {
+          console.log(`✅ [getImageBlob] 读取成功: ${imageId}`)
+          console.log(`   大小: ${(record.blob.size / 1024).toFixed(2)} KB`)
+          resolve(record.blob)
+        } else {
+          console.warn(`⚠️ [getImageBlob] 图片不存在: ${imageId}`)
+          reject(new Error('Image not found'))
+        }
+      }
+      
+      request.onerror = () => {
+        console.error('❌ [getImageBlob] 读取失败:', request.error)
+        reject(new Error('读取图片 Blob 失败: ' + request.error))
+      }
+    })
+  } catch (e) {
+    console.error('❌ [getImageBlob] 异常:', e)
+    throw new Error('读取图片 Blob 失败: ' + e.message)
+  }
+}
+
+/**
+ * 获取图片元数据（不读取 Blob）
+ * @param {string} imageId
+ * @returns {Promise<Object>}
+ */
+export async function getImageMetadata(imageId) {
+  try {
+    if (!imageId) {
+      throw new Error('imageId 不能为空')
+    }
+
+    const database = await getDB()
+    
+    return new Promise((resolve, reject) => {
+      const transaction = database.transaction([STORE_IMAGES], 'readonly')
+      const store = transaction.objectStore(STORE_IMAGES)
+      const request = store.get(imageId)
+      
+      request.onsuccess = () => {
+        const record = request.result
+        if (record) {
+          const { blob, ...metadata } = record
+          resolve(metadata)
+        } else {
+          reject(new Error('Image not found'))
+        }
+      }
+      
+      request.onerror = () => {
+        reject(new Error('读取图片元数据失败: ' + request.error))
+      }
+    })
+  } catch (e) {
+    console.error('❌ [getImageMetadata] 异常:', e)
+    throw new Error('读取图片元数据失败: ' + e.message)
+  }
+}
+
+/**
+ * 删除图片 Blob
+ * @param {string} imageId
+ * @returns {Promise<void>}
+ */
+export async function deleteImageBlob(imageId) {
+  try {
+    if (!imageId) {
+      throw new Error('imageId 不能为空')
+    }
+
+    const database = await getDB()
+    
+    return new Promise((resolve, reject) => {
+      const transaction = database.transaction([STORE_IMAGES], 'readwrite')
+      const store = transaction.objectStore(STORE_IMAGES)
+      const request = store.delete(imageId)
+      
+      request.onsuccess = () => {
+        console.log(`✅ [deleteImageBlob] 图片已删除: ${imageId}`)
+        resolve()
+      }
+      
+      request.onerror = () => {
+        console.error('❌ [deleteImageBlob] 删除失败:', request.error)
+        reject(new Error('删除图片 Blob 失败: ' + request.error))
+      }
+    })
+  } catch (e) {
+    console.error('❌ [deleteImageBlob] 异常:', e)
+    throw new Error('删除图片 Blob 失败: ' + e.message)
+  }
+}

@@ -13,7 +13,7 @@ from .gemini_3_pro_image import generate_with_gemini_image3
 from .imagen_3_capability import generate_with_imagen_3_capability
 from .gemini_2_5_flash_image import generate_with_gemini_2_5_flash_image
 from .prompt_optimizer import optimize_prompt
-from .chat import chat
+from .gemini_3_flash_preview import chat
 
 # 向后兼容：保留旧名称
 generate_with_gemini_image = generate_with_gemini_image3

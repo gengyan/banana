@@ -10,6 +10,9 @@ from typing import Optional, List, Dict
 from datetime import datetime
 from contextlib import contextmanager
 
+# 在文件顶部导入 config，避免循环导入问题
+from config import MANAGER_ACCOUNT, MANAGER_PASSWORD, MANAGER_NICKNAME, MANAGER_LEVEL
+
 logger = logging.getLogger("数据库")
 
 # 尝试导入 bcrypt，如果未安装则使用 hashlib 作为备用
@@ -504,36 +507,60 @@ def get_all_users() -> List[Dict]:
         return []
 
 
-def create_manager_account():
+def create_manager_account(account: str = None, password: str = None, nickname: str = None, level: str = None):
     """
-    创建 manager 管理员账号
-    账号: manager
-    密码: 075831
+    创建管理员账号
+    
+    参数从 config 模块获取，可通过环境变量覆盖。
+    
+    Args:
+        account: 管理员账号（默认从 config.MANAGER_ACCOUNT 获取）
+        password: 管理员密码（默认从 config.MANAGER_PASSWORD 获取）
+        nickname: 管理员昵称（默认从 config.MANAGER_NICKNAME 获取）
+        level: 管理员级别（默认从 config.MANAGER_LEVEL 获取）
+        
+    Raises:
+        ValueError: 如果必要参数未提供或密码未设置
     """
+    # 使用参数或从配置获取默认值
+    account = account or MANAGER_ACCOUNT
+    password = password or MANAGER_PASSWORD
+    nickname = nickname or MANAGER_NICKNAME
+    level = level or MANAGER_LEVEL
+    
     try:
-        # 检查 manager 账号是否已存在
-        existing = get_user_by_account('manager')
+        # 验证必要参数
+        if not password:
+            raise ValueError(
+                "❌ 管理员密码未设置！\n"
+                "请设置环境变量: export MANAGER_PASSWORD='your_secure_password'\n"
+                "或在创建时传递 password 参数"
+            )
+        
+        # 检查账号是否已存在
+        existing = get_user_by_account(account)
         if existing:
-            logger.info("ℹ️  manager 账号已存在，跳过创建")
+            logger.info(f"ℹ️  管理员账号 '{account}' 已存在，跳过创建")
             return existing
         
-        # 创建 manager 账号
+        # 创建管理员账号
         manager = create_user(
-            account='manager',
-            password='075831',
-            nickname='管理员',
-            level='enterprise'
+            account=account,
+            password=password,
+            nickname=nickname,
+            level=level
         )
         
-        logger.info(f"✅ manager 管理员账号创建成功")
-        logger.info(f"   账号: manager")
-        logger.info(f"   密码: 075831")
+        logger.info(f"✅ 管理员账号创建成功")
+        logger.info(f"   账号: {account}")
+        logger.info(f"   昵称: {nickname}")
+        logger.info(f"   级别: {level}")
         logger.info(f"   用户ID: {manager['id']}")
         
         return manager
         
     except Exception as e:
-        logger.error(f"创建 manager 账号失败: {e}")
+        logger.error(f"创建管理员账号失败: {e}")
         raise
 
 

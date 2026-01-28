@@ -9,6 +9,7 @@ from datetime import datetime
 import os
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from log_utils import log_info, log_error, log_success, log_api, log_warning
 
 logger = logging.getLogger("支付API")
 
@@ -46,7 +47,7 @@ async def create_payment(request: CreatePaymentRequest):
         # 生成订单ID
         order_id = f"ORDER_{datetime.now().strftime('%Y%m%d%H%M%S')}_{os.urandom(4).hex()}"
         
-        logger.info(f"✅ 创建支付订单: plan={plan}, price={price}, order_id={order_id}")
+        log_success("支付", "创建支付订单", {"套餐": plan, "价格": price, "订单ID": order_id})
         
         # TODO: 集成实际的支付接口（支付宝等）
         return {
@@ -59,8 +60,7 @@ async def create_payment(request: CreatePaymentRequest):
         }
         
     except Exception as e:
-        logger.error(f"❌ 创建支付订单错误: {e}")
-        logger.error(traceback.format_exc())
+        log_error("支付", "创建支付订单失败", {"错误": str(e)})
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -73,7 +73,7 @@ async def query_payment(order_id: str):
     - order_id: 订单ID
     """
     try:
-        logger.info(f"📋 查询支付订单: order_id={order_id}")
+        log_info("支付", "查询支付订单", {"订单ID": order_id})
         
         # TODO: 查询实际的支付订单状态
         return {
@@ -84,8 +84,7 @@ async def query_payment(order_id: str):
         }
         
     except Exception as e:
-        logger.error(f"❌ 查询支付订单错误: {e}")
-        logger.error(traceback.format_exc())
+        log_error("支付", "查询支付订单失败", {"错误": str(e)})
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -121,7 +120,9 @@ async def submit_order(request: SubmitOrderRequest):
         
         user_level = level_map.get(plan, "normal")
         
-        logger.info(f"✅ 收到订单提交: 套餐={plan}, 价格={price}, 账号={account}, 订单号={order_number}, 等级={user_level}")
+        log_success("支付", "收到订单提交", {
+            "套餐": plan, "价格": price, "账号": account, "订单号": order_number, "等级": user_level
+        })
         
         # TODO: 验证订单号，更新用户等级等
         # 这里可以根据订单号查询支付状态，如果支付成功，则更新用户等级
@@ -138,6 +139,5 @@ async def submit_order(request: SubmitOrderRequest):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"❌ 提交订单错误: {e}")
-        logger.error(traceback.format_exc())
+        log_error("支付", "提交订单失败", {"错误": str(e)})
         raise HTTPException(status_code=500, detail=str(e))

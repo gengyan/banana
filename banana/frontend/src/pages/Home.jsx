@@ -43,6 +43,13 @@ const Home = () => {
   const [oldPhotoLoading, setOldPhotoLoading] = useState(false)
   const [restoredImage, setRestoredImage] = useState(null)
 
+  // 当切换到banana模式时，自动重置分辨率为1K（banana模式只支持1K）
+  useEffect(() => {
+    if (mode === 'banana' && resolution !== '1K') {
+      setResolution('1K')
+    }
+  }, [mode, resolution])
+
   useEffect(() => {
     const loadTemplates = async () => {
       try {
@@ -206,19 +213,59 @@ const Home = () => {
 
     try {
       const finalAspectRatio = aspectRatio === 'auto' ? null : aspectRatio
+      
+      // ⚠️ 调试：检查 referenceImages 的内容
+      console.log(`🎬 [Home.jsx] handleGenerate - referenceImages 状态:`, {
+        length: referenceImages.length,
+        items: referenceImages.map((img, idx) => ({
+          index: idx,
+          hasFile: !!img.file,
+          fileName: img.file?.name,
+          fileSize: img.file?.size,
+          fileType: img.file?.type,
+          hasPreview: !!img.preview
+        }))
+      })
+      
+      // 提取文件数组
+      const imageFiles = referenceImages.map((img) => img.file)
+      console.log(`📦 [Home.jsx] 提取的 imageFiles:`, {
+        length: imageFiles.length,
+        items: imageFiles.map((f, idx) => ({
+          index: idx,
+          name: f?.name,
+          size: f?.size,
+          type: f?.type,
+          isFile: f instanceof File
+        }))
+      })
+      
       const result = await chatAPI.chat(
         message,
         mode,
         [],
-        referenceImages.map((img) => img.file),
+        imageFiles,
         finalAspectRatio,
         resolution,
         temperature
       )
 
+      // ⚠️ 调试：检查返回结果
+      console.log(`🔍 [Home.jsx] 收到聊天结果:`, {
+        resultType: typeof result,
+        keys: Object.keys(result || {}),
+        isBlob: result?.is_blob,
+        hasImageBlob: result?.image_blob instanceof Blob,
+        imageBlobSize: result?.image_blob?.size,
+        hasImageData: !!result?.image_data,
+        imageFormat: result?.image_format,
+        response: result?.response
+      })
+
       let aiImageForSave = null
 
       if (result?.is_blob && result.image_blob instanceof Blob) {
+        console.log(`✅ [Home.jsx] Blob 响应处理 - 大小: ${result.image_blob.size} bytes`)
         if (imageBlobUrlRef.current) {
           URL.revokeObjectURL(imageBlobUrlRef.current)
           imageBlobUrlRef.current = null
@@ -230,6 +277,7 @@ const Home = () => {
         setImageFormat(result.image_format || 'jpeg')
         aiImageForSave = result.image_blob
         setShowImageModal(true)
+        console.log(`📸 [Home.jsx] 已显示图片，URL: ${tempUrl}`)
       } else if (result?.image_data) {
         const dataUrl = result.image_data.startsWith('data:')
           ? result.image_data

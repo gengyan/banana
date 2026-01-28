@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
 """
 测试用户认证 API
+注意：请确保环境变量 MANAGER_PASSWORD 已设置
 """
 
+import os
+import sys
 import requests
 import json
+
+# 添加项目根目录到路径
+sys.path.insert(0, os.path.dirname(__file__))
+
+from config import MANAGER_ACCOUNT, MANAGER_PASSWORD
 
 BASE_URL = "http://localhost:8000"
 
@@ -22,10 +30,16 @@ def test_register():
 
 def test_login():
     """测试登录"""
-    print("\n测试登录 manager...")
+    print(f"\n测试登录 {MANAGER_ACCOUNT}...")
+    
+    if not MANAGER_PASSWORD:
+        print("❌ 错误：MANAGER_PASSWORD 环境变量未设置")
+        print("   请设置环境变量: export MANAGER_PASSWORD='your_password'")
+        return None
+    
     response = requests.post(f"{BASE_URL}/api/auth/login", json={
-        "account": "manager",
-        "password": "075831"
+        "account": MANAGER_ACCOUNT,
+        "password": MANAGER_PASSWORD
     })
     print(f"状态码: {response.status_code}")
     print(f"响应: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")

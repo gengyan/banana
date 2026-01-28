@@ -21,7 +21,7 @@ export default function MainForm({
   onRemoveImage
 }) {
   const { t } = useTranslation()
-  const isImageMode = mode === 'banana' || mode === 'banana_pro' || mode === 'image_generation'
+  const isImageMode = mode === 'banana' || mode === 'banana_pro' || mode === 'imagen'
 
   return (
     <div className="wrapper relative mt-[30px] max-md:mt-4 w-[min(800px,100%)] max-md:w-full">
@@ -147,23 +147,26 @@ export default function MainForm({
               <option value="21:9">21:9</option>
             </select>
 
-            <select
-              value={resolution}
-              onChange={(e) => setResolution(e.target.value)}
-              className="h-11 max-md:h-10 rounded-2xl border-none bg-white/[12%] px-4 max-md:px-3 py-2 text-base max-md:text-sm text-white focus:outline-none focus:ring-2 focus:ring-white/20 hover:bg-white/15 cursor-pointer appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{
-                backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")",
-                backgroundPosition: 'right 0.75rem center',
-                backgroundRepeat: 'no-repeat',
-                backgroundSize: '1.5em 1.5em',
-                paddingRight: '2.75rem'
-              }}
-              disabled={loading || !isImageMode}
-            >
-              <option value="1K">1K</option>
-              <option value="2K">2K</option>
-              <option value="4K">4K</option>
-            </select>
+            {/* 分辨率选择 - banana模式下隐藏（只支持1K） */}
+            {mode !== 'banana' && (
+              <select
+                value={resolution}
+                onChange={(e) => setResolution(e.target.value)}
+                className="h-11 max-md:h-10 rounded-2xl border-none bg-white/[12%] px-4 max-md:px-3 py-2 text-base max-md:text-sm text-white focus:outline-none focus:ring-2 focus:ring-white/20 hover:bg-white/15 cursor-pointer appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")",
+                  backgroundPosition: 'right 0.75rem center',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundSize: '1.5em 1.5em',
+                  paddingRight: '2.75rem'
+                }}
+                disabled={loading || !isImageMode}
+              >
+                <option value="1K">1K</option>
+                <option value="2K">2K</option>
+                <option value="4K">4K</option>
+              </select>
+            )}
           </div>
 
           {/* 控制栏：第二行 - 温度滑块 + 提交按钮 */}

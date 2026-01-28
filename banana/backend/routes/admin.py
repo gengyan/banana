@@ -8,6 +8,7 @@ import traceback
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Request as Request
 from pydantic import BaseModel
+from log_utils import log_info, log_error, log_success
 
 from database import get_all_users, update_user, get_user_feedback_count, hash_password, get_user_by_id
 from routes.auth import get_user_from_session, get_user_sessions
@@ -86,7 +87,7 @@ async def get_all_users_api(request: Request):
             else:
                 user['feedbackCount'] = get_user_feedback_count(user['id'])
         
-        logger.info(f"✅ 管理员获取用户列表成功，共 {len(users)} 个用户")
+        log_success("用户管理", "获取用户列表成功", {"用户数": len(users)})
         
         return {
             "success": True,
@@ -97,8 +98,7 @@ async def get_all_users_api(request: Request):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"获取用户列表失败: {e}")
-        logger.error(traceback.format_exc())
+        log_error("用户管理", "获取用户列表失败", {"错误": str(e)})
         raise HTTPException(status_code=500, detail=f"获取用户列表失败: {str(e)}")
 
 
@@ -137,7 +137,7 @@ async def update_user_api(user_id: str, request: UpdateUserRequest, req: Request
         if not updated_user:
             raise HTTPException(status_code=404, detail="用户不存在")
         
-        logger.info(f"✅ 管理员更新用户成功: {user_id}")
+        log_success("用户管理", "更新用户成功", {"用户ID": user_id})
         
         return {
             "success": True,
@@ -147,8 +147,7 @@ async def update_user_api(user_id: str, request: UpdateUserRequest, req: Request
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"更新用户失败: {e}")
-        logger.error(traceback.format_exc())
+        log_error("用户管理", "更新用户失败", {"错误": str(e)})
         raise HTTPException(status_code=500, detail=f"更新用户失败: {str(e)}")
 
 
@@ -182,7 +181,10 @@ async def reset_user_password_api(user_id: str, req: Request):
         if not updated_user:
             raise HTTPException(status_code=500, detail="密码重置失败")
         
-        logger.info(f"✅ 管理员重置用户密码成功: {user_id} (账号: {user.get('account')})")
+        log_success("用户管理", "重置用户密码成功", {
+            "用户ID": user_id,
+            "账号": user.get('account')
+        })
         
         return {
             "success": True,
@@ -193,6 +195,5 @@ async def reset_user_password_api(user_id: str, req: Request):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"重置用户密码失败: {e}")
-        logger.error(traceback.format_exc())
+        log_error("用户管理", "重置用户密码失败", {"错误": str(e)})
         raise HTTPException(status_code=500, detail=f"重置用户密码失败: {str(e)}")

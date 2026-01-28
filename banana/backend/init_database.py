@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 数据库初始化脚本
-创建数据库表并创建 manager 账号
+创建数据库表并创建管理员账号
 """
 
 import os
@@ -19,32 +19,49 @@ logging.basicConfig(
 sys.path.insert(0, os.path.dirname(__file__))
 
 from database import init_database, create_manager_account
+from config import validate_config, MANAGER_ACCOUNT, MANAGER_PASSWORD, MANAGER_NICKNAME
 
 def main():
     """初始化数据库"""
-    print("=" * 50)
+    print("=" * 60)
     print("🚀 初始化数据库")
-    print("=" * 50)
+    print("=" * 60)
     print("")
     
     try:
-        # 1. 初始化数据库表
-        print("步骤 1: 初始化数据库表...")
+        # 1. 验证配置
+        print("步骤 1: 验证配置...")
+        is_valid, errors = validate_config()
+        
+        if not is_valid:
+            print("⚠️  配置验证失败:")
+            for error in errors:
+                print(f"   {error}")
+            print("")
+            print("初始化已取消")
+            sys.exit(1)
+        
+        print("✅ 配置验证通过")
+        print("")
+        
+        # 2. 初始化数据库表
+        print("步骤 2: 初始化数据库表...")
         init_database()
         print("✅ 数据库表初始化完成")
         print("")
         
-        # 2. 创建 manager 账号
-        print("步骤 2: 创建 manager 管理员账号...")
+        # 3. 创建管理员账号
+        print("步骤 3: 创建管理员账号...")
         manager = create_manager_account()
-        print(f"✅ manager 账号创建成功")
-        print(f"   账号: manager")
-        print(f"   密码: 075831")
+        print(f"✅ 管理员账号创建成功")
+        print(f"   账号: {MANAGER_ACCOUNT}")
+        print(f"   昵称: {MANAGER_NICKNAME}")
+        print(f"   用户ID: {manager['id']}")
         print("")
         
-        print("=" * 50)
+        print("=" * 60)
         print("✅ 数据库初始化完成！")
-        print("=" * 50)
+        print("=" * 60)
         
     except Exception as e:
         print(f"❌ 初始化失败: {e}")

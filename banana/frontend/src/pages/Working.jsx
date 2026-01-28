@@ -275,7 +275,7 @@ function Working() {
                   className="h-10 rounded-xl border-none bg-white/[12%] px-2.5 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-white/20"
                 >
                   <option value="chat">聊天模式</option>
-                  <option value="image_generation">图片生成</option>
+                  <option value="imagen">图片生成</option>
                 </select>
               </div>
               {/* 参考图片预览 */}

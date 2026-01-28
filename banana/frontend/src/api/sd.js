@@ -91,6 +91,18 @@ const getSD35ApiUrl = () => {
   return '/sd35';
 };
 
+// 老照片修复服务器地址（环境变量优先，默认回退到现有公网地址）
+const getOldPhotoApiUrl = () => {
+  const apiUrl = import.meta.env.VITE_OLD_PHOTO_API_URL;
+
+  if (apiUrl) {
+    return apiUrl.replace(/\/$/, '');
+  }
+
+  // 回退到当前使用的公网地址，确保未配置环境变量时功能可用
+  return 'https://u486297-8ceb-89b88d1b.westc.gpuhub.com:8443';
+};
+
 // 从环境变量获取 SD3.5 WebSocket 地址
 const getSD35WsUrl = () => {
   const wsUrl = import.meta.env.VITE_SD35_WS_URL;
@@ -848,7 +860,7 @@ export const submitPromptForGroupPhoto = async (promptJSON) => {
  * 提交 Prompt 到老照片修复服务器
  */
 export const submitPromptForOldPhoto = async (promptJSON) => {
-  const OLD_PHOTO_API_URL = "https://u486297-8ceb-89b88d1b.westc.gpuhub.com:8443";
+  const OLD_PHOTO_API_URL = getOldPhotoApiUrl();
   // 确保 URL 格式正确：移除末尾斜杠，然后添加 /prompt
   const baseUrl = OLD_PHOTO_API_URL.replace(/\/$/, '');
   const promptUrl = `${baseUrl}/prompt`;
@@ -1131,26 +1143,40 @@ export const watchProgress = (promptId, onProgress, onComplete, onError, timeout
         isResolved = true;
         const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
         const error = new Error(`[超时错误] 任务执行超时（${elapsed} 秒），Prompt ID: ${promptId}`);
-        console.group('⏰ [SD3.5] WebSocket 超时');
-        console.error('🔴 错误类型: 任务执行超时');
-        console.error('🆔 Prompt ID:', promptId);
-        console.error('⏱️ 已等待时间:', `${elapsed} 秒`);
-        console.error('📊 收到消息数:', messageCount);
-        console.error('💡 可能原因:');
-        console.error('   - 服务器处理时间过长');
-        console.error('   - WebSocket 连接中断');
-        console.error('   - 任务执行失败但未返回错误');
-        console.error('   - 网络连接问题');
-        console.groupEnd();
-        
-        // 同时输出到终端
-        console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.error(`⏰ [SD3.5前端] 任务超时 [${new Date().toISOString()}]`);
-        console.error(`   Prompt ID: ${promptId}`);
-        console.error(`   已等待: ${elapsed} 秒`);
-        console.error(`   收到消息数: ${messageCount}`);
-        console.error(`   最后消息时间: ${lastMessageTime > 0 ? new Date(lastMessageTime).toISOString() : '无'}`);
-        console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+        // 简化日志：默认输出一行关键错误，详细内容仅在开发或显式开启时打印
+        console.error('⏰ [SD3.5] WebSocket 超时', {
+          promptId,
+          elapsed: `${elapsed} 秒`,
+          messageCount,
+          lastMessageISO: lastMessageTime > 0 ? new Date(lastMessageTime).toISOString() : '无'
+        });
+
+        // 详细诊断仅在开发或开启 verbose 日志时输出
+        const verbose = (import.meta?.env?.VITE_LOG_VERBOSE ?? import.meta?.env?.DEV) === true ||
+                        (import.meta?.env?.VITE_LOG_VERBOSE === 'true');
+        if (verbose) {
+          console.group('⏰ [SD3.5] WebSocket 超时（详细）');
+          console.error('🔴 错误类型: 任务执行超时');
+          console.error('🆔 Prompt ID:', promptId);
+          console.error('⏱️ 已等待时间:', `${elapsed} 秒`);
+          console.error('📊 收到消息数:', messageCount);
+          console.error('💡 可能原因:');
+          console.error('   - 服务器处理时间过长');
+          console.error('   - WebSocket 连接中断');
+          console.error('   - 任务执行失败但未返回错误');
+          console.error('   - 网络连接问题');
+          console.groupEnd();
+
+          // 同步到终端的分隔块也只在 verbose 下输出
+          console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          console.error(`⏰ [SD3.5前端] 任务超时 [${new Date().toISOString()}]`);
+          console.error(`   Prompt ID: ${promptId}`);
+          console.error(`   已等待: ${elapsed} 秒`);
+          console.error(`   收到消息数: ${messageCount}`);
+          console.error(`   最后消息时间: ${lastMessageTime > 0 ? new Date(lastMessageTime).toISOString() : '无'}`);
+          console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        }
         
         ws.close();
         if (onError) onError(error);
@@ -2607,7 +2633,7 @@ export const generateImage = async (prompt, referenceImages = null, aspectRatio 
 export const restoreOldPhoto = async (imageFile, prompt = "(masterpiece:1.2), (photorealistic:1.2), highly detailed face, realistic skin texture, sharp eyes, clean face, sharp focus, 8k") => {
   const startTime = Date.now();
   // 老照片修复使用独立的服务器地址
-  const OLD_PHOTO_API_URL = "https://u486297-8ceb-89b88d1b.westc.gpuhub.com:8443";
+  const OLD_PHOTO_API_URL = getOldPhotoApiUrl();
   
   console.group('🖼️ [老照片修复] 开始处理');
   console.log('📁 图片文件:', imageFile.name);

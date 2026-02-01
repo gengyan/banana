@@ -30,7 +30,7 @@ export default function MainForm({
 
         <form onSubmit={onSubmit} className="space-y-4 max-md:space-y-3 relative z-10 p-[10px] max-md:p-2">
           {/* 参考图片预览区域 */}
-          {(mode === 'banana' || mode === 'banana_pro' || mode === 'chat') && referenceImages.length > 0 && (
+          {(mode === 'banana' || mode === 'banana_pro' || mode === 'chat' || mode === 'imagen') && referenceImages.length > 0 && (
             <div id="attachment" className="flex items-center gap-2 max-md:gap-1.5 px-1 pb-3 max-md:pb-2 flex-wrap">
               {referenceImages.map((img, index) => (
                 <div key={index} className="relative group">
@@ -120,6 +120,7 @@ export default function MainForm({
               <option value="chat">{t('home.chatMode')}</option>
               <option value="banana">{t('home.bananaMode')}</option>
               <option value="banana_pro">{t('home.bananaProMode')}</option>
+              <option value="imagen">Imagen</option>
             </select>
             <select
               value={aspectRatio}

@@ -404,14 +404,22 @@ const gemini3Pro = async (message, referenceImages = null, options = {}) => {
 }
 
 /**
- * Imagen 3 模型（当前预留，后续实现）
+ * Imagen 4 模型
+ * 自动判断文生图/图生图
  * @param {string} message - 提示词
  * @param {Array<File>|File|null} referenceImages - 参考图片（可选）
- * @param {Object} options - 其他选项
+ * @param {Object} options - 其他选项 { history, aspectRatio, resolution, temperature }
  */
 const imagen = async (message, referenceImages = null, options = {}) => {
-  // 当前预留，后续实现
-  throw new Error('❌ Imagen 3 接口尚未实现，敬请期待！')
+  console.log('🎨 [Imagen 4] 统一使用 FormData 方式（支持参考图和无参考图）')
+  
+  try {
+    // 统一使用 processWithFormData 处理（与 gemini3Pro 一致）
+    return await processWithFormData(message, referenceImages, '/api/imagen', 'imagen', 'imagen_4', options)
+  } catch (error) {
+    console.error('❌ [Imagen 4] 请求失败:', error.message)
+    throw error
+  }
 }
 
 

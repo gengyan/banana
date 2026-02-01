@@ -91,6 +91,27 @@ def generate_with_imagen(client, prompt: str, aspect_ratio: Optional[str] = None
             config=config
         )
         
+        # 🔍 调试：打印完整的响应对象
+        logger.info(f"🔍 [调试] 响应对象类型: {type(response)}")
+        logger.info(f"🔍 [调试] 响应对象属性: {dir(response)}")
+        logger.info(f"🔍 [调试] 响应对象: {response}")
+        
+        # 检查 generated_images 属性
+        if hasattr(response, 'generated_images'):
+            logger.info(f"🔍 [调试] generated_images 存在: {response.generated_images}")
+            logger.info(f"🔍 [调试] generated_images 类型: {type(response.generated_images)}")
+            if response.generated_images:
+                logger.info(f"🔍 [调试] generated_images 长度: {len(response.generated_images)}")
+            else:
+                logger.warning(f"⚠️ [调试] generated_images 为空或 None")
+        else:
+            logger.error(f"❌ [调试] 响应对象没有 generated_images 属性")
+            # 尝试查看其他可能的属性
+            if hasattr(response, 'candidates'):
+                logger.info(f"🔍 [调试] 发现 candidates 属性: {response.candidates}")
+            if hasattr(response, 'images'):
+                logger.info(f"🔍 [调试] 发现 images 属性: {response.images}")
+        
         # 4. 正确提取图片数据和元信息
         if response.generated_images and len(response.generated_images) > 0:
             generated_image = response.generated_images[0]

@@ -103,8 +103,9 @@ from PIL import Image
 # 生成器模块
 from generators import generate_with_gemini_image3, generate_with_gemini_2_5_flash_image, optimize_prompt
 from generators.gemini_3_flash_preview import chat
+from generators.imagen_4 import generate_with_imagen
 # ========== 其他模型已屏蔽（统一使用 gemini-3-pro-image-preview）==========
-# from generators import generate_with_imagen, generate_with_imagen_3_capability
+# from generators import generate_with_imagen_3_capability
 
 # 配置 Google API
 api_key = os.getenv("GOOGLE_API_KEY")
@@ -112,6 +113,14 @@ if not api_key:
     print("⚠️  警告: GOOGLE_API_KEY 未设置，请在 .env 文件中配置")
 else:
     genai.configure(api_key=api_key)
+    
+    # 初始化 Google genai 客户端用于 Imagen 4 API
+    try:
+        genai_client = genai_image.Client(api_key=api_key)
+        logger.info("✅ Google genai 客户端初始化成功")
+    except Exception as e:
+        logger.error(f"❌ Google genai 客户端初始化失败: {e}")
+        genai_client = None
 
 # 创建 FastAPI 应用
 app = FastAPI(title="果捷后端服务", version="1.3.0")
@@ -321,6 +330,107 @@ async def banana_img_pro(request: Request):
             "success": False,
             "error_code": "INTERNAL_ERROR",
             "error_message": str(e)
+        }, status_code=500)
+
+# ==================== Imagen 4 路由 ====================
+
+@app.post("/api/imagen")
+async def imagen(request: Request):
+    """
+    Imagen 4.0 图片生成接口
+    
+    - 支持文生图和图生图
+    - 返回二进制图片数据 (blob)
+    - FormData 参数: message, mode, aspect_ratio, image_size, reference_images (可选)
+    """
+    request_id = f"{int(time.time()*1000)}"
+    logger.info(f"[{request_id}] 📨 收到 Imagen 4 请求")
+    
+    try:
+        if not genai_client:
+            logger.error(f"[{request_id}] ❌ Google genai 客户端未初始化")
+            return JSONResponse({
+                "success": False,
+                "error_code": "GENAI_CLIENT_INIT_FAILED",
+                "message": "Google genai 客户端未初始化"
+            }, status_code=500)
+        
+        # 解析 FormData
+        form_data = await request.form()
+        message = form_data.get("message", "")
+        prompt = form_data.get("prompt", message)  # 兼容 prompt 和 message
+        aspect_ratio = form_data.get("aspect_ratio", "1:1")
+        image_size = form_data.get("image_size", "2K")
+        reference_images = form_data.getlist("reference_images")
+        
+        logger.info(f"[{request_id}] 📝 提示词: {prompt[:100]}...")
+        logger.info(f"[{request_id}] 📐 参数: aspect_ratio={aspect_ratio}, image_size={image_size}")
+        logger.info(f"[{request_id}] 📸 参考图片数: {len(reference_images)}")
+        
+        if not prompt:
+            logger.error(f"[{request_id}] ❌ 提示词不能为空")
+            return JSONResponse({
+                "success": False,
+                "error_code": "EMPTY_PROMPT",
+                "message": "提示词不能为空"
+            }, status_code=400)
+        
+        # 调用 Imagen 4 生成图片
+        logger.info(f"[{request_id}] 🚀 调用 Imagen 4 API")
+        data_url = generate_with_imagen(
+            genai_client,
+            prompt=prompt,
+            aspect_ratio=aspect_ratio,
+            image_size=image_size
+        )
+        
+        if data_url:
+            # 从 data URL 中提取二进制数据
+            if data_url.startswith('data:'):
+                # 格式: data:image/jpeg;base64,/9j/4AAQ...
+                header, encoded = data_url.split(',', 1)
+                mime_type = header.split(';')[0].split(':')[1]
+                image_bytes = base64.b64decode(encoded)
+                
+                logger.info(f"[{request_id}] ✅ Imagen 4 生图成功")
+                logger.info(f"[{request_id}] 📦 图片大小: {len(image_bytes)} bytes ({len(image_bytes) / 1024:.2f} KB)")
+                
+                # 返回二进制图片数据（与 banana-img 一致）
+                return Response(
+                    content=image_bytes,
+                    media_type=mime_type,
+                    headers={
+                        "X-Image-Format": mime_type.split('/')[-1],
+                        "X-Image-Width": "",
+                        "X-Image-Height": "",
+                        "X-Model-Version": "imagen_4",
+                        "X-Success": "true",
+                        "Cache-Control": "no-cache",
+                        "Access-Control-Expose-Headers": "X-Image-Format, X-Image-Width, X-Image-Height, X-Model-Version, X-Success"
+                    }
+                )
+            else:
+                logger.error(f"[{request_id}] ❌ 返回的不是 data URL 格式")
+                return JSONResponse({
+                    "success": False,
+                    "error_code": "INVALID_DATA_URL",
+                    "message": "图片生成返回格式错误"
+                }, status_code=500)
+        else:
+            logger.error(f"[{request_id}] ❌ Imagen 4 生图返回 None")
+            return JSONResponse({
+                "success": False,
+                "error_code": "IMAGE_GENERATION_FAILED",
+                "message": "图片生成失败，请查看服务器日志"
+            }, status_code=500)
+    
+    except Exception as e:
+        logger.error(f"[{request_id}] ❌ 异常: {str(e)}")
+        logger.error(f"[{request_id}] 📋 错误堆栈:\n{traceback.format_exc()}")
+        return JSONResponse({
+            "success": False,
+            "error_code": "INTERNAL_ERROR",
+            "error_detail": str(e)
         }, status_code=500)
 
 @app.post("/api/optimize-prompt")

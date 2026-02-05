@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>生成测试数据 - 历史会话</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+    .info {
+      background: #f0f0f0;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: #555;
+    }
+    .info strong {
+      color: #333;
+    }
+    button {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      margin-bottom: 10px;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    button:active {
+      transform: translateY(0);
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .progress {
+      margin-top: 20px;
+      display: none;
+    }
+    .progress.active {
+      display: block;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #e0e0e0;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      width: 0%;
+      transition: width 0.3s;
+    }
+    .progress-text {
+      text-align: center;
+      color: #666;
+      font-size: 14px;
+    }
+    .log {
+      margin-top: 20px;
+      max-height: 300px;
+      overflow-y: auto;
+      background: #f9f9f9;
+      border-radius: 10px;
+      padding: 15px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .log-item {
+      margin-bottom: 5px;
+      padding: 5px;
+      border-radius: 4px;
+    }
+    .log-item.success {
+      color: #28a745;
+    }
+    .log-item.error {
+      color: #dc3545;
+    }
+    .log-item.info {
+      color: #17a2b8;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 生成测试数据</h1>
+    <p class="subtitle">为历史会话生成 50 条测试数据</p>
+    
+    <div class="info">
+      <strong>说明：</strong><br>
+      • 将生成 50 个项目，每个项目包含 2-4 条消息<br>
+      • 使用 "截屏2026-01-21 12.34.17.png" 作为图片数据<br>
+      • 数据将保存到 IndexedDB (GuojieChatData)<br>
+      • 生成完成后可在项目库中查看
+    </div>
+
+    <button id="generateBtn" onclick="generateTestData()">开始生成测试数据</button>
+    <button id="clearBtn" onclick="clearAllData()" style="background: #dc3545;">清空所有数据</button>
+
+    <div class="progress" id="progress">
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="progress-text" id="progressText">准备中...</div>
+    </div>
+
+    <div class="log" id="log"></div>
+  </div>
+
+  <script type="module">
+    // 动态导入存储函数
+    let storageFunctions = null;
+
+    async function loadStorageFunctions() {
+      if (storageFunctions) return storageFunctions;
+      
+      try {
+        const module = await import('/src/utils/storage.js');
+        storageFunctions = {
+          createProject: module.createProject,
+          saveMessage: module.saveMessage,
+          getAllProjects: module.getAllProjects,
+          clearAllHistory: module.clearAllHistory
+        };
+        return storageFunctions;
+      } catch (error) {
+        console.error('加载存储函数失败:', error);
+        throw new Error('无法加载存储函数，请确保在正确的环境中运行（http://localhost:3000）');
+      }
+    }
+
+    // 日志函数
+    function log(message, type = 'info') {
+      const logDiv = document.getElementById('log');
+      const item = document.createElement('div');
+      item.className = `log-item ${type}`;
+      item.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logDiv.appendChild(item);
+      logDiv.scrollTop = logDiv.scrollHeight;
+      console.log(message);
+    }
+
+    // 更新进度
+    function updateProgress(current, total, message) {
+      const progress = document.getElementById('progress');
+      const progressFill = document.getElementById('progressFill');
+      const progressText = document.getElementById('progressText');
+      
+      progress.classList.add('active');
+      const percentage = Math.round((current / total) * 100);
+      progressFill.style.width = `${percentage}%`;
+      progressText.textContent = `${message} (${current}/${total})`;
+    }
+
+    // 加载图片并转换为 base64
+    async function loadImageAsBase64(imagePath) {
+      try {
+        const response = await fetch(imagePath);
+        if (!response.ok) {
+          throw new Error(`无法加载图片: ${response.statusText}`);
+        }
+        const blob = await response.blob();
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      } catch (error) {
+        log(`❌ 加载图片失败: ${error.message}，使用占位符`, 'error');
+        // 如果图片加载失败，返回一个占位符
+        return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+      }
+    }
+
+    // 生成随机提示词
+    function generateRandomPrompt(index) {
+      const prompts = [
+        '生成一张美丽的风景画',
+        '创建一个未来城市的场景',
+        '画一只可爱的小猫',
+        '设计一个现代风格的建筑',
+        '生成一张抽象艺术画',
+        '创建一个科幻场景',
+        '画一幅水彩画风格的作品',
+        '设计一个极简风格的图标',
+        '生成一张日式风格的插画',
+        '创建一个3D渲染场景',
+        '画一幅印象派风格的画作',
+        '设计一个复古风格的海报',
+        '生成一张超现实主义作品',
+        '创建一个卡通风格的角色',
+        '画一幅写实风格的肖像',
+        '设计一个现代UI界面',
+        '生成一张概念艺术图',
+        '创建一个奇幻世界的场景',
+        '画一幅中国风的水墨画',
+        '设计一个科技感的产品图',
+        '生成一张夜景照片',
+        '创建一个海底世界的场景',
+        '画一幅油画风格的作品',
+        '设计一个极简风格的logo',
+        '生成一张动漫风格的插画',
+        '创建一个外太空的场景',
+        '画一幅素描风格的作品',
+        '设计一个现代风格的包装',
+        '生成一张赛博朋克风格的作品',
+        '创建一个童话世界的场景',
+        '画一幅工笔画风格的作品',
+        '设计一个扁平化风格的图标',
+        '生成一张蒸汽朋克风格的作品',
+        '创建一个魔法世界的场景',
+        '画一幅版画风格的作品',
+        '设计一个现代风格的网站',
+        '生成一张超写实风格的作品',
+        '创建一个末日世界的场景',
+        '画一幅漫画风格的作品',
+        '设计一个现代风格的app界面',
+        '生成一张像素艺术风格的作品',
+        '创建一个古代世界的场景',
+        '画一幅插画风格的作品',
+        '设计一个现代风格的品牌',
+        '生成一张数字艺术风格的作品',
+        '创建一个未来世界的场景',
+        '画一幅手绘风格的作品',
+        '设计一个现代风格的卡片',
+        '生成一张抽象表现主义作品',
+        '创建一个神秘世界的场景'
+      ];
+      return prompts[index % prompts.length];
+    }
+
+    // 生成随机回复
+    function generateRandomResponse(index) {
+      const responses = [
+        '好的，我来为您生成这张图片。这将是一幅精美的作品，展现您所描述的场景。',
+        '正在为您创建图片，请稍候...',
+        '图片生成中，这可能需要几秒钟时间。',
+        '好的，我已经理解了您的需求，正在生成相应的图片。',
+        '正在处理您的请求，图片即将生成完成。',
+        '图片生成完成！这是一幅精美的作品，展现了您所描述的场景。',
+        '已经为您创建了图片，希望您喜欢这个结果。',
+        '图片已生成，这是一幅高质量的作品。',
+        '完成了！图片已经生成，展现了您要求的风格和内容。',
+        '图片生成成功，这是一幅令人满意的作品。'
+      ];
+      return responses[index % responses.length];
+    }
+
+    // 生成测试数据
+    window.generateTestData = async function() {
+      const btn = document.getElementById('generateBtn');
+      const logDiv = document.getElementById('log');
+      logDiv.innerHTML = '';
+      
+      try {
+        btn.disabled = true;
+        log('🚀 开始生成测试数据...', 'info');
+        
+        // 加载存储函数
+        log('📦 正在加载存储函数...', 'info');
+        const storage = await loadStorageFunctions();
+        log('✅ 存储函数加载成功', 'success');
+        
+        // 加载图片
+        log('📸 正在加载图片...', 'info');
+        const imageData = await loadImageAsBase64('/截屏2026-01-21 12.34.17.png');
+        log(`✅ 图片加载成功，大小: ${(imageData.length / 1024).toFixed(2)} KB`, 'success');
+        
+        const totalProjects = 50;
+        let successCount = 0;
+        let errorCount = 0;
+        
+        for (let i = 0; i < totalProjects; i++) {
+          try {
+            updateProgress(i + 1, totalProjects, `正在生成项目 ${i + 1}`);
+            
+            // 创建项目
+            const projectTitle = `测试项目 ${String(i + 1).padStart(3, '0')} - ${generateRandomPrompt(i)}`;
+            const project = await storage.createProject(projectTitle);
+            log(`✅ 项目 ${i + 1} 已创建: ${project.title}`, 'success');
+            
+            // 生成消息数量（2-4条）
+            const messageCount = 2 + Math.floor(Math.random() * 3);
+            
+            for (let j = 0; j < messageCount; j++) {
+              // 用户消息
+              const userMessage = j === 0 
+                ? generateRandomPrompt(i)
+                : `继续优化，添加更多细节`;
+              
+              await storage.saveMessage(project.id, {
+                role: 'user',
+                content: userMessage,
+                imageData: j === 0 && Math.random() > 0.5 ? imageData : null // 50% 概率在第一条消息中包含图片
+              });
+              
+              // AI回复
+              const aiResponse = j === messageCount - 1
+                ? `图片已生成完成！这是一幅精美的作品，展现了您所描述的场景。希望您喜欢这个结果。`
+                : generateRandomResponse(i);
+              
+              // 最后一条消息包含图片
+              const hasImage = j === messageCount - 1;
+              await storage.saveMessage(project.id, {
+                role: 'assistant',
+                content: aiResponse,
+                imageData: hasImage ? imageData : null
+              });
+            }
+            
+            log(`✅ 项目 ${i + 1} 完成，包含 ${messageCount * 2} 条消息`, 'success');
+            successCount++;
+            
+            // 添加小延迟，避免阻塞
+            if (i % 10 === 0) {
+              await new Promise(resolve => setTimeout(resolve, 100));
+            }
+          } catch (error) {
+            log(`❌ 项目 ${i + 1} 生成失败: ${error.message}`, 'error');
+            errorCount++;
+          }
+        }
+        
+        // 完成
+        updateProgress(totalProjects, totalProjects, '生成完成');
+        log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+        log(`✅ 测试数据生成完成！`, 'success');
+        log(`   成功: ${successCount} 个项目`, 'success');
+        log(`   失败: ${errorCount} 个项目`, errorCount > 0 ? 'error' : 'info');
+        log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+        log('💡 提示：现在可以前往项目库查看生成的数据', 'info');
+        
+      } catch (error) {
+        log(`❌ 生成失败: ${error.message}`, 'error');
+        console.error('生成错误:', error);
+      } finally {
+        btn.disabled = false;
+      }
+    };
+
+    // 清空所有数据
+    window.clearAllData = async function() {
+      if (!confirm('确定要清空所有历史数据吗？此操作不可恢复！')) {
+        return;
+      }
+      
+      const btn = document.getElementById('clearBtn');
+      const logDiv = document.getElementById('log');
+      
+      try {
+        btn.disabled = true;
+        logDiv.innerHTML = '';
+        log('🗑️ 正在清空所有数据...', 'info');
+        
+        const storage = await loadStorageFunctions();
+        await storage.clearAllHistory();
+        
+        log('✅ 所有数据已清空', 'success');
+        log('💡 提示：页面已刷新，可以重新生成测试数据', 'info');
+        
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      } catch (error) {
+        log(`❌ 清空失败: ${error.message}`, 'error');
+        console.error('清空错误:', error);
+      } finally {
+        btn.disabled = false;
+      }
+    };
+
+    // 页面加载完成提示
+    window.addEventListener('DOMContentLoaded', () => {
+      console.log('✅ 测试数据生成脚本已加载');
+      console.log('💡 点击"开始生成测试数据"按钮开始生成');
+      console.log('💡 访问地址: http://localhost:3000/generate-test-data.html');
+    });
+  </script>
+</body>
+</html>

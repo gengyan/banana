@@ -1,0 +1,34 @@
+steps:
+  # 构建 Docker 镜像，禁用缓存
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '--no-cache', '-t', 'gcr.io/$PROJECT_ID/hello:$COMMIT_SHA', '-t', 'gcr.io/$PROJECT_ID/hello:latest', '.']
+    id: 'build-image'
+
+  # 推送到 Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/hello:$COMMIT_SHA']
+    id: 'push-image'
+
+  # 部署到 Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'hello'
+      - '--image=gcr.io/$PROJECT_ID/hello:$COMMIT_SHA'
+      - '--region=asia-southeast1'
+      - '--allow-unauthenticated'
+      - '--platform=managed'
+      - '--timeout=5m'
+    id: 'deploy-service'
+
+options:
+  # 禁用所有构建缓存
+  machineType: 'E2_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+  # 不启用缓存
+  pool: {}
+
+timeout: '1200s'
+

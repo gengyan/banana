@@ -1,0 +1,131 @@
+{
+  "app": {
+    "name": "Guojie",
+    "slogan": "Photo Editing, Powered by Guojie AI"
+  },
+  "nav": {
+    "login": "Login",
+    "register": "Register",
+    "language": "Language",
+    "logout": "Logout",
+    "manual": "Manual",
+    "purchase": "Purchase",
+    "customerService": "Customer Service",
+    "profile": "Profile",
+    "userManagement": "User Management"
+  },
+  "home": {
+    "chatMode": "Chat Mode",
+    "bananaMode": "Banana",
+    "bananaProMode": "Banana Pro",
+    "sd35Mode": "SD3.5",
+    "placeholder": "Please enter your request...",
+    "submit": "Submit",
+    "auto": "Auto",
+    "temp": "Temp",
+    "selectImage": "Select Image",
+    "processing": "Processing...",
+    "inspirationDiscovery": "Inspiration Discovery"
+  },
+  "login": {
+    "title": "Guojie",
+    "welcome": "Welcome back",
+    "email": "Email",
+    "password": "Password",
+    "emailPlaceholder": "Please enter your email",
+    "passwordPlaceholder": "Please enter your password",
+    "login": "Login",
+    "register": "Register",
+    "backToHome": "Back to Home"
+  },
+  "working": {
+    "title": "Workspace",
+    "placeholder": "Please enter a message..."
+  },
+  "modal": {
+    "close": "Close",
+    "download": "Download Image",
+    "error": "Sorry, an error occurred. Please try again later.",
+    "promptOnly": "Image Generation Prompt",
+    "imageGenerating": "Preparing image data...",
+    "imageServiceRequired": "Note: Currently showing the image generation prompt. To display the actual image, image generation service integration (such as DALL-E, Stable Diffusion, etc.) is required.",
+    "noErrorInfo": "No error information"
+  },
+  "error": {
+    "imageGenerationFailed": "Image generation failed",
+    "checkBackendLogs": "Please check the backend console logs for detailed diagnostic information."
+  },
+  "imageEditor": {
+    "title": "Edit Image",
+    "scale": "Scale",
+    "hint": "Tip: Drag to select crop area, use slider to adjust scale",
+    "hintSquare": "Tip: Drag the crop box to move it, drag blank area to create new crop area, use slider to adjust scale",
+    "cancel": "Cancel",
+    "save": "Save"
+  },
+  "profile": {
+    "title": "My Profile",
+    "account": "Account",
+    "nickname": "Nickname",
+    "gender": "Gender",
+    "age": "Age",
+    "genderMale": "Male",
+    "genderFemale": "Female",
+    "genderOther": "Other",
+    "genderPlaceholder": "Please select",
+    "agePlaceholder": "Please enter age",
+    "avatarHint": "Click icon to change avatar",
+    "save": "Save Changes",
+    "saving": "Saving...",
+    "updateSuccess": "Profile updated successfully"
+  },
+  "projectLibrary": {
+    "title": "Conversation History",
+    "subtitle": "View and manage all your chat sessions",
+    "loading": "Loading...",
+    "noProjects": "No projects",
+    "noProjectsHint": "Start creating your first project",
+    "clearHistory": "Clear History",
+    "clearing": "Clearing...",
+    "clearConfirm": "Are you sure you want to clear all history? This action cannot be undone and will delete all projects and images.",
+    "clearSuccess": "All history has been cleared",
+    "clearError": "Failed to clear history, please check the console for details",
+    "deleteConfirm": "Are you sure you want to delete this project?",
+    "deleteError": "Failed to delete project",
+    "deleteProject": "Delete Project",
+    "updatedAt": "Updated on",
+    "me": "Me",
+    "ai": "AI",
+    "image": "[Image]"
+  },
+  "customerService": {
+    "title": "Customer Service",
+    "subtitle": "We're here to help and support you",
+    "feedbackLabel": "Feedback",
+    "feedbackPlaceholder": "Please enter your feedback...",
+    "contactLabel": "Contact Information",
+    "contactPlaceholder": "Please enter your WeChat ID, QQ number, or phone number",
+    "submit": "Submit Feedback",
+    "submitting": "Submitting...",
+    "submitSuccess": "Feedback submitted successfully! We will contact you soon.",
+    "submitError": "Submission failed, please try again later",
+    "feedbackRequired": "Feedback cannot be empty",
+    "contactRequired": "Contact information cannot be empty",
+    "contactService": "Contact Service",
+    "scanQRCode": "Scan QR Code to Add Service WeChat",
+    "qrCode": "Service WeChat QR Code",
+    "qrHint": "Use WeChat to scan and add service WeChat",
+    "submitFeedback": "Submit Feedback",
+    "myFeedbacks": "My Feedback Records",
+    "loading": "Loading...",
+    "noFeedbacks": "No feedback records",
+    "replied": "Replied",
+    "hasReply": "Replied",
+    "feedbackDetail": "Feedback Detail",
+    "you": "You",
+    "service": "Service",
+    "contact": "Contact",
+    "noReplyYet": "Service has not replied yet, please wait patiently"
+  }
+}
+

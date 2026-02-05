@@ -40,7 +40,12 @@ class FormDataParser:
         Returns: 是否解析成功
         """
         try:
+            log_info("请求解析", "开始解析 FormData 请求", 
+                    details={"请求": req_data.request_id}, emoji="📥")
+            
             form_data = await request.form()
+            log_info("FormData获取", f"收到表单数据，字段数: {len(form_data)}", 
+                    details={"请求": req_data.request_id})
             
             # 基础字段
             req_data.message = form_data.get("message", "")
@@ -49,19 +54,33 @@ class FormDataParser:
             req_data.resolution = form_data.get("resolution")
             req_data.skip_optimization = form_data.get("skip_optimization") == "true"
             
+            log_info("表单字段解析", f"message={len(req_data.message)}字符, mode={req_data.mode}", 
+                    details={"请求": req_data.request_id}, emoji="📋")
+            
             # 解析参考图片
             reference_images = form_data.getlist("reference_images")
             if reference_images:
+                log_info("参考图片", f"检测到 {len(reference_images)} 个上传文件", 
+                        details={"请求": req_data.request_id}, emoji="📸")
                 req_data.reference_images = await FormDataParser._parse_images(
                     reference_images, req_data.request_id
                 )
-                log_info("参考图片", f"接收 {len(req_data.reference_images)} 张", 
-                        details={"请求": req_data.request_id}, emoji="📸")
+                log_info("参考图片", f"成功解析 {len(req_data.reference_images)} 张图片", 
+                        details={"请求": req_data.request_id}, emoji="✅")
             
             return True
             
+        except ValueError as ve:
+            log_error("FormData解析失败", f"值错误: {str(ve)}", {"请求": req_data.request_id})
+            return False
+        except TypeError as te:
+            log_error("FormData解析失败", f"类型错误: {str(te)}", {"请求": req_data.request_id})
+            return False
         except Exception as e:
-            log_error("FormData解析失败", str(e), {"请求": req_data.request_id})
+            log_error("FormData解析失败", f"未知错误: {str(e)} (类型: {type(e).__name__})", 
+                     {"请求": req_data.request_id})
+            import traceback
+            log_error("完整堆栈", traceback.format_exc(), {"请求": req_data.request_id})
             return False
     
     @staticmethod
@@ -70,11 +89,28 @@ class FormDataParser:
         images = []
         for idx, file in enumerate(upload_files):
             try:
+                log_info("图片处理", f"处理第{idx+1}张图片: {file.filename}", 
+                        details={"请求": request_id}, emoji="🖼️")
+                
                 image_bytes = await file.read()
+                size_kb = len(image_bytes) / 1024
+                log_info("图片读取", f"第{idx+1}张完成, 大小: {size_kb:.1f}KB", 
+                        details={"文件": file.filename, "请求": request_id})
+                
                 image = Image.open(io.BytesIO(image_bytes))
+                log_info("图片打开", f"第{idx+1}张成功, 分辨率: {image.size}, 格式: {image.format}", 
+                        details={"请求": request_id}, emoji="✅")
+                
                 images.append(image)
+            except IOError as ie:
+                log_warning("图片解析失败", f"第{idx+1}张 IO错误: {file.filename} - {str(ie)}", 
+                           {"请求": request_id})
             except Exception as e:
-                log_warning("图片解析失败", f"第{idx+1}张: {str(e)}", {"请求": request_id})
+                log_warning("图片解析失败", f"第{idx+1}张 未知错误: {file.filename} - {str(e)} ({type(e).__name__})", 
+                           {"请求": request_id})
+        
+        log_info("图片处理完成", f"共处理 {len(upload_files)} 张，成功 {len(images)} 张", 
+                details={"请求": request_id})
         return images
 
 
@@ -88,7 +124,12 @@ class JSONParser:
         Returns: 是否解析成功
         """
         try:
+            log_info("请求解析", "开始解析 JSON 请求", 
+                    details={"请求": req_data.request_id}, emoji="📥")
+            
             body = await request.json()
+            log_info("JSON获取", f"成功解析 JSON，包含 {len(body)} 个字段", 
+                    details={"请求": req_data.request_id})
             
             req_data.message = body.get("message", "")
             req_data.mode = body.get("mode", "banana")
@@ -97,10 +138,22 @@ class JSONParser:
             req_data.skip_optimization = body.get("skip_optimization", False)
             req_data.reference_images = []
             
+            log_info("JSON字段解析", f"message={len(req_data.message)}字符, mode={req_data.mode}", 
+                    details={"请求": req_data.request_id}, emoji="✅")
+            
             return True
             
+        except ValueError as ve:
+            log_error("JSON解析失败", f"值错误: {str(ve)}", {"请求": req_data.request_id})
+            return False
+        except TypeError as te:
+            log_error("JSON解析失败", f"类型错误: {str(te)}", {"请求": req_data.request_id})
+            return False
         except Exception as e:
-            log_error("JSON解析失败", str(e), {"请求": req_data.request_id})
+            log_error("JSON解析失败", f"未知错误: {str(e)} (类型: {type(e).__name__})", 
+                     {"请求": req_data.request_id})
+            import traceback
+            log_error("完整堆栈", traceback.format_exc(), {"请求": req_data.request_id})
             return False
 
 
@@ -291,10 +344,27 @@ async def handle_banana_img_request(request: Request,
             "INVALID_FORMAT", "返回数据格式错误", req_data.request_id
         )
     
-    if not image_data.get("image_bytes"):
+    image_bytes = image_data.get("image_bytes")
+    if not image_bytes:
         return ResponseBuilder.build_error_response(
             "EMPTY_IMAGE_DATA", "图片数据为空", req_data.request_id
         )
     
-    # 8. 构建成功响应
+    # 8. 验证图片数据类型（序列化检查）
+    if not isinstance(image_bytes, bytes):
+        log_error("序列化验证", f"image_bytes 类型不是 bytes: {type(image_bytes)}", 
+                 {"请求": req_data.request_id})
+        return ResponseBuilder.build_error_response(
+            "SERIALIZATION_ERROR", 
+            f"图片数据类型错误: 需要 bytes，实际为 {type(image_bytes)}", 
+            req_data.request_id
+        )
+    
+    log_success("数据验证", "所有返回数据已验证", {
+        "图片大小": f"{len(image_bytes)} bytes",
+        "MIME类型": image_data.get("mime_type"),
+        "请求": req_data.request_id
+    })
+    
+    # 9. 构建成功响应
     return ResponseBuilder.build_success_response(image_data, req_data.request_id), 200

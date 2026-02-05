@@ -84,12 +84,14 @@ def generate_with_imagen(client, prompt: str, aspect_ratio: Optional[str] = None
     try:
         # 3. 关键：使用 generate_images (google-genai SDK 使用复数形式)
         # Imagen 4.0 支持提示增强，响应中可能包含增强后的提示词
+        logger.info("开始调用模型")
         logger.info(f"🚀 调用 Imagen API: model={model_id}")
         response = client.models.generate_images(
             model=model_id,
             prompt=prompt,
             config=config
         )
+        logger.info("模型调用完成")
         
         # 🔍 调试：打印完整的响应对象
         logger.info(f"🔍 [调试] 响应对象类型: {type(response)}")
@@ -210,6 +212,7 @@ def generate_with_imagen(client, prompt: str, aspect_ratio: Optional[str] = None
             
     except Exception as e:
         error_msg = str(e)
+        logger.error(f"发生崩溃: {error_msg}", exc_info=True)
         logger.error(f"❌ Imagen 4.0 生图失败: {error_msg}")
         logger.error(f"📋 错误类型: {type(e).__name__}")
         

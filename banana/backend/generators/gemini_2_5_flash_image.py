@@ -109,8 +109,8 @@ class GeminiClient:
             return None
         
         # 获取配置
-        project_id = os.getenv("VERTEX_AI_PROJECT") or os.getenv("GOOGLE_CLOUD_PROJECT")
-        location = os.getenv("VERTEX_AI_LOCATION", "global")
+        project_id = (os.getenv("VERTEX_AI_PROJECT") or os.getenv("GOOGLE_CLOUD_PROJECT") or "").strip()
+        location = (os.getenv("VERTEX_AI_LOCATION", "global") or "").strip()
         credentials = GeminiClient._resolve_credentials()
         
         if not project_id:
@@ -205,10 +205,12 @@ class ImageProcessor:
         """从响应中提取图片数据"""
         try:
             if not hasattr(response, 'candidates') or not response.candidates:
+                log_warning("图片提取", "response.candidates 为空，可能被安全过滤")
                 return None
             
             candidate = response.candidates[0]
             if not hasattr(candidate, 'content') or not candidate.content.parts:
+                log_warning("图片提取", "candidate.content.parts 为空，无法提取图片")
                 return None
             
             for part in candidate.content.parts:
@@ -354,6 +356,7 @@ def generate_with_gemini_2_5_flash_image(
             contents=[types.Content(parts=parts, role='user')],
             config=config
         )
+        log_info("API调用", "模型调用完成", emoji="✅")
         
         # 提取图片
         result = ImageProcessor.extract_from_response(response)
@@ -386,23 +389,35 @@ def generate_with_gemini_2_5_flash_image(
             "格式": format_name
         })
         
-        # 返回新架构格式：image_bytes + 元数据
+        # 验证 image_bytes 类型
+        if not isinstance(image_bytes, bytes):
+            log_error("验证失败", f"image_bytes 类型错误: {type(image_bytes)}")
+            return {"error": True, "error_type": "InvalidImageType",
+                    "error_message": f"image_bytes 必须是 bytes，实际为 {type(image_bytes)}"}
+        
+        log_info("序列化检查", "返回数据已验证为可序列化", emoji="✅")
+        
+        # 返回新架构格式：image_bytes + 元数据（所有字段都是可序列化的）
         return {
-            "image_bytes": image_bytes,
-            "mime_type": mime_type or f"image/{format_name}",
-            "format": format_name,
-            "width": width,
-            "height": height
+            "image_bytes": image_bytes,  # bytes
+            "mime_type": mime_type or f"image/{format_name}",  # str
+            "format": format_name,  # str
+            "width": width,  # int
+            "height": height  # int
         }
         
     except Exception as e:
-        log_error("生成失败", f"Gemini 2.5 错误: {e}")
-        logger.error(traceback.format_exc())
+        error_type = type(e).__name__
+        error_message = str(e)
+        log_error("生成失败", f"Gemini 2.5 错误: {error_message}")
+        logger.error(f"异常类型: {error_type}")
+        logger.error(f"完整堆栈:\n{traceback.format_exc()}")
+        
+        # ⚠️ 重要：不要在返回的字典中包含 traceback，因为它可能包含对象引用导致序列化失败
         return {
             "error": True,
-            "error_type": type(e).__name__,
-            "error_message": str(e),
-            "error_detail": traceback.format_exc()
+            "error_type": error_type,  # str
+            "error_message": error_message  # str
         }
 
 

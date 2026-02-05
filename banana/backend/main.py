@@ -136,6 +136,10 @@ origins = [
     "http://localhost:3001",
     "http://127.0.0.1:3000",
     "http://127.0.0.1:3001",
+    "http://gj.emaos.top",
+    "https://gj.emaos.top",
+    "http://gj.emaos.top/",
+    "https://gj.emaos.top/",
 ]
 
 # 从环境变量读取生产环境的前端地址（多个地址用逗号分隔）
@@ -143,7 +147,10 @@ frontend_origins_env = os.getenv("FRONTEND_ORIGINS", "")
 if frontend_origins_env:
     env_origins = [origin.strip() for origin in frontend_origins_env.split(",") if origin.strip()]
     for origin in env_origins:
-        if origin not in origins:
+        normalized = origin.rstrip("/")
+        if normalized and normalized not in origins:
+            origins.append(normalized)
+        if origin.endswith("/") and origin not in origins:
             origins.append(origin)
 
 print(f"🌐 CORS 允许的源: {origins}")
@@ -229,17 +236,35 @@ async def banana_img(request: Request):
     - FormData: 支持参考图片上传（图生图）
     - JSON: 仅支持文生图
     """
+    request_id = f"{int(time.time()*1000)}"
+
     try:
+        logger.info(f"[{request_id}] 📨 收到 banana-img 请求")
+
         # 导入处理器
         from handlers.banana_img_handler import handle_banana_img_request
-        
+
+        logger.info(f"[{request_id}] 🔄 开始解析请求数据...")
+
         # 强制使用 banana 模式（Gemini 2.5）
-        response_data, status_code = await handle_banana_img_request(
-            request,
-            generate_with_gemini_2_5_flash_image,
-            generate_with_gemini_image3,
-            force_mode="banana"
-        )
+        try:
+            logger.info("开始调用模型")
+            response_data, status_code = await handle_banana_img_request(
+                request,
+                generate_with_gemini_2_5_flash_image,
+                generate_with_gemini_image3,
+                force_mode="banana"
+            )
+            logger.info("模型调用完成")
+            logger.info(f"[{request_id}] ✅ 请求处理完成, status={status_code}")
+        except Exception as handler_error:
+            logger.error(f"发生崩溃: {str(handler_error)}", exc_info=True)
+            return JSONResponse({
+                "success": False,
+                "error_code": "HANDLER_ERROR",
+                "error_message": f"请求处理器错误: {str(handler_error)}",
+                "request_id": request_id
+            }, status_code=500)
         
         # 构建响应
         if response_data.get("success"):
@@ -258,12 +283,16 @@ async def banana_img(request: Request):
                     "X-Image-Height": str(height) if height else "",
                     "X-Model-Version": "gemini_image",
                     "X-Success": "true",
+                    "X-Request-ID": request_id,
                     "Cache-Control": "no-cache",
-                    "Access-Control-Expose-Headers": "X-Image-Format, X-Image-Width, X-Image-Height, X-Model-Version, X-Success"
+                    "Access-Control-Expose-Headers": "X-Image-Format, X-Image-Width, X-Image-Height, X-Model-Version, X-Success, X-Request-ID"
                 }
             )
         else:
-            return JSONResponse(response_data, status_code=status_code)
+            return JSONResponse({
+                **response_data,
+                "request_id": request_id
+            }, status_code=status_code)
     
     except Exception as e:
         from log_utils import log_error
@@ -272,7 +301,8 @@ async def banana_img(request: Request):
         return JSONResponse({
             "success": False,
             "error_code": "INTERNAL_ERROR",
-            "error_message": str(e)
+            "error_message": str(e),
+            "request_id": request_id
         }, status_code=500)
 
 
@@ -286,26 +316,52 @@ async def banana_img_pro(request: Request):
     - FormData: 支持参考图片上传（图生图）
     - JSON: 仅支持文生图
     """
+    request_id = f"{int(time.time()*1000)}"
+    
     try:
+        logger.info(f"[{request_id}] 📨 收到 banana-img-pro 请求")
+
+        # 详细记录请求信息
+        content_type = request.headers.get("content-type", "未指定")
+        content_length = request.headers.get("content-length", "未指定")
+        logger.debug(f"[{request_id}] 请求信息: content-type={content_type}, content-length={content_length}")
+
         # 导入处理器
         from handlers.banana_img_handler import handle_banana_img_request
-        
+
+        logger.info(f"[{request_id}] 🔄 开始解析请求数据...")
+
         # 强制使用 banana_pro 模式（Gemini 3 Pro）
-        response_data, status_code = await handle_banana_img_request(
-            request,
-            generate_with_gemini_2_5_flash_image,
-            generate_with_gemini_image3,
-            force_mode="banana_pro"
-        )
-        
+        try:
+            logger.info("开始调用模型")
+            response_data, status_code = await handle_banana_img_request(
+                request,
+                generate_with_gemini_2_5_flash_image,
+                generate_with_gemini_image3,
+                force_mode="banana_pro"
+            )
+            logger.info("模型调用完成")
+            logger.info(f"[{request_id}] ✅ 请求处理完成, status={status_code}")
+        except Exception as handler_error:
+            logger.error(f"发生崩溃: {str(handler_error)}", exc_info=True)
+            return JSONResponse({
+                "success": False,
+                "error_code": "HANDLER_ERROR",
+                "error_message": f"请求处理器错误: {str(handler_error)}",
+                "request_id": request_id
+            }, status_code=500)
+
         # 构建响应
         if response_data.get("success"):
+            logger.info(f"[{request_id}] 🖼️  图片生成成功，准备返回...")
             image_bytes = response_data.get("image_bytes")
             mime_type = response_data.get("mime_type", "image/jpeg")
             image_format = response_data.get("format", "jpeg")
             width = response_data.get("width", 0)
             height = response_data.get("height", 0)
-            
+
+            logger.debug(f"[{request_id}] 返回图片: format={image_format}, size={width}x{height}, mime={mime_type}, bytes={len(image_bytes) if image_bytes else 0}")
+
             return Response(
                 content=image_bytes,
                 media_type=mime_type,
@@ -315,22 +371,65 @@ async def banana_img_pro(request: Request):
                     "X-Image-Height": str(height) if height else "",
                     "X-Model-Version": "gemini_3_pro",
                     "X-Success": "true",
+                    "X-Request-ID": request_id,
                     "Cache-Control": "no-cache",
-                    "Access-Control-Expose-Headers": "X-Image-Format, X-Image-Width, X-Image-Height, X-Model-Version, X-Success"
+                    "Access-Control-Expose-Headers": "X-Image-Format, X-Image-Width, X-Image-Height, X-Model-Version, X-Success, X-Request-ID"
                 }
             )
         else:
-            return JSONResponse(response_data, status_code=status_code)
+            logger.warning(f"[{request_id}] ⚠️  生成失败: {response_data.get('error_message', '未知错误')}")
+            return JSONResponse(
+                {
+                    **response_data,
+                    "request_id": request_id
+                },
+                status_code=status_code
+            )
+    
+    except ValueError as val_error:
+        logger.exception(f"[{request_id}] 发生严重错误：参数验证失败")
+        logger.error(f"[{request_id}] ValueError 详情: {val_error}")
+        return JSONResponse({
+            "success": False,
+            "error_code": "VALIDATION_ERROR",
+            "error_message": f"参数验证失败: {str(val_error)}",
+            "request_id": request_id
+        }, status_code=400)
+    
+    except asyncio.TimeoutError as timeout_error:
+        logger.exception(f"[{request_id}] 发生严重错误：请求超时")
+        logger.error(f"[{request_id}] TimeoutError 详情: {timeout_error}")
+        return JSONResponse({
+            "success": False,
+            "error_code": "TIMEOUT_ERROR",
+            "error_message": f"请求处理超时（超过10分钟）",
+            "request_id": request_id
+        }, status_code=504)
+    
+    except MemoryError as mem_error:
+        logger.exception(f"[{request_id}] 发生严重错误：内存不足")
+        logger.error(f"[{request_id}] MemoryError 详情: {mem_error}")
+        return JSONResponse({
+            "success": False,
+            "error_code": "MEMORY_ERROR",
+            "error_message": "服务器内存不足，请稍后重试",
+            "request_id": request_id
+        }, status_code=503)
     
     except Exception as e:
-        from log_utils import log_error
-        log_error("banana-img-pro异常", str(e))
-        logger.error(traceback.format_exc())
+        logger.exception(f"[{request_id}] 发生严重错误")
+        logger.error(f"[{request_id}] 异常类型: {type(e).__name__}")
+        logger.error(f"[{request_id}] 异常信息: {str(e)}")
+        logger.error(f"[{request_id}] 完整堆栈:\n{traceback.format_exc()}")
+        
         return JSONResponse({
             "success": False,
             "error_code": "INTERNAL_ERROR",
-            "error_message": str(e)
+            "error_message": f"内部服务器错误: {str(e)}",
+            "error_type": type(e).__name__,
+            "request_id": request_id
         }, status_code=500)
+
 
 # ==================== Imagen 4 路由 ====================
 
@@ -376,13 +475,24 @@ async def imagen(request: Request):
             }, status_code=400)
         
         # 调用 Imagen 4 生成图片
-        logger.info(f"[{request_id}] 🚀 调用 Imagen 4 API")
-        data_url = generate_with_imagen(
-            genai_client,
-            prompt=prompt,
-            aspect_ratio=aspect_ratio,
-            image_size=image_size
-        )
+        logger.info("开始调用模型")
+        try:
+            logger.info(f"[{request_id}] 🚀 调用 Imagen 4 API")
+            data_url = generate_with_imagen(
+                genai_client,
+                prompt=prompt,
+                aspect_ratio=aspect_ratio,
+                image_size=image_size
+            )
+            logger.info("模型调用完成")
+        except Exception as e:
+            logger.error(f"发生崩溃: {str(e)}", exc_info=True)
+            return JSONResponse({
+                "success": False,
+                "error_code": "MODEL_CALL_FAILED",
+                "message": str(e),
+                "request_id": request_id
+            }, status_code=500)
         
         if data_url:
             # 从 data URL 中提取二进制数据
@@ -405,8 +515,9 @@ async def imagen(request: Request):
                         "X-Image-Height": "",
                         "X-Model-Version": "imagen_4",
                         "X-Success": "true",
+                        "X-Request-ID": request_id,
                         "Cache-Control": "no-cache",
-                        "Access-Control-Expose-Headers": "X-Image-Format, X-Image-Width, X-Image-Height, X-Model-Version, X-Success"
+                        "Access-Control-Expose-Headers": "X-Image-Format, X-Image-Width, X-Image-Height, X-Model-Version, X-Success, X-Request-ID"
                     }
                 )
             else:
@@ -421,7 +532,8 @@ async def imagen(request: Request):
             return JSONResponse({
                 "success": False,
                 "error_code": "IMAGE_GENERATION_FAILED",
-                "message": "图片生成失败，请查看服务器日志"
+                "message": "图片生成失败，请查看服务器日志",
+                "request_id": request_id
             }, status_code=500)
     
     except Exception as e:
@@ -430,7 +542,8 @@ async def imagen(request: Request):
         return JSONResponse({
             "success": False,
             "error_code": "INTERNAL_ERROR",
-            "error_detail": str(e)
+            "error_detail": str(e),
+            "request_id": request_id
         }, status_code=500)
 
 @app.post("/api/optimize-prompt")

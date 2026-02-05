@@ -11,6 +11,7 @@ import logger from '../utils/logger'
 const client = axios.create({
   baseURL: API_BASE_URL,
   timeout: 600000, // 10分钟超时（600秒，图片生成可能需要较长时间，特别是复杂场景和多参考图）
+  withCredentials: true, // 启用跨域凭证（Cookie、HTTP 认证等），必须与后端 CORS allow_credentials=true 配合
 })
 
 // 添加请求拦截器

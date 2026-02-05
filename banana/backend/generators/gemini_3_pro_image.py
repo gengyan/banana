@@ -9,6 +9,7 @@ import base64
 import logging
 import traceback
 import io
+import time
 from pathlib import Path
 from typing import Optional, List, Tuple
 from PIL import Image
@@ -121,8 +122,8 @@ class GeminiClient:
         if not GEMINI_NEW_AVAILABLE:
             return None
         
-        project_id = os.getenv("VERTEX_AI_PROJECT") or os.getenv("GOOGLE_CLOUD_PROJECT")
-        location = os.getenv("VERTEX_AI_LOCATION", "global")
+        project_id = (os.getenv("VERTEX_AI_PROJECT") or os.getenv("GOOGLE_CLOUD_PROJECT") or "").strip()
+        location = (os.getenv("VERTEX_AI_LOCATION", "global") or "").strip()
         credentials = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
         api_key = os.getenv("GOOGLE_CLOUD_API_KEY")
         
@@ -197,27 +198,79 @@ class ImageProcessor:
         """从响应中提取图片数据"""
         try:
             if not hasattr(response, 'candidates') or not response.candidates:
+                logger.warning(f"⚠️ [{function_name}] response.candidates 为空，可能被安全过滤")
                 return None
             
             candidate = response.candidates[0]
             if not hasattr(candidate, 'content') or not hasattr(candidate.content, 'parts'):
+                logger.warning(f"⚠️ [{function_name}] candidate.content.parts 为空，无法提取图片")
                 return None
             
+            def _looks_like_base64_text(text: str) -> bool:
+                if not text or len(text) % 4 != 0:
+                    return False
+                base64_chars = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=\n\r")
+                return all(ch in base64_chars for ch in text)
+
+            def _decode_base64_to_bytes(text: str) -> Optional[bytes]:
+                try:
+                    decoded = base64.b64decode(text, validate=True)
+                    return decoded
+                except Exception:
+                    try:
+                        return base64.b64decode(text)
+                    except Exception:
+                        return None
+
+            def _is_image_magic(raw: bytes) -> bool:
+                return (
+                    raw.startswith(b"\xFF\xD8\xFF") or
+                    raw.startswith(b"\x89PNG") or
+                    raw.startswith(b"GIF87a") or
+                    raw.startswith(b"GIF89a") or
+                    raw.startswith(b"RIFF")  # WebP
+                )
+
             # 查找图片 part
-            for part in candidate.content.parts:
+            found_parts = []
+            for idx, part in enumerate(candidate.content.parts):
+                part_type = "unknown"
+                if hasattr(part, 'inline_data'):
+                    part_type = "inline_data"
+                elif hasattr(part, 'text'):
+                    part_type = "text"
+                found_parts.append(f"part[{idx}]={part_type}")
+
                 if hasattr(part, 'inline_data') and part.inline_data:
                     mime_type = part.inline_data.mime_type
                     data = part.inline_data.data
-                    
+
                     if isinstance(data, bytes):
-                        return data, mime_type
-                    elif isinstance(data, str):
-                        # Base64 解码
+                        # 可能是 base64 文本 bytes
                         try:
-                            return base64.b64decode(data), mime_type
-                        except:
+                            text = data.decode('ascii')
+                            if _looks_like_base64_text(text):
+                                decoded = _decode_base64_to_bytes(text)
+                                if decoded and _is_image_magic(decoded):
+                                    logger.warning(f"⚠️ [{function_name}] inline_data 为 base64(bytes)，已解码为原始图片 bytes")
+                                    return decoded, mime_type
+                        except Exception:
                             pass
-            
+
+                        logger.info(f"✅ [{function_name}] inline_data bytes: {len(data)} bytes, mime={mime_type}")
+                        return data, mime_type
+
+                    elif isinstance(data, str):
+                        # 允许 base64 字符串，解码为原始 bytes 再返回
+                        if _looks_like_base64_text(data):
+                            decoded = _decode_base64_to_bytes(data)
+                            if decoded and _is_image_magic(decoded):
+                                logger.warning(f"⚠️ [{function_name}] inline_data 为 base64(str)，已解码为原始图片 bytes")
+                                return decoded, mime_type
+                        logger.warning(f"⚠️ [{function_name}] inline_data 为字符串但无法解码，长度={len(data)}")
+                        return None
+
+            logger.warning(f"⚠️ [{function_name}] 未找到 inline_data 图片，parts={', '.join(found_parts)}")
             return None
         except Exception as e:
             logger.error(f"❌ [{function_name}] 提取图片失败: {e}")
@@ -236,12 +289,66 @@ class ImageProcessor:
     @staticmethod
     def validate_and_encode(image_bytes: bytes) -> Tuple[bool, Optional[str]]:
         """验证图片并返回格式"""
-        try:
-            img = Image.open(io.BytesIO(image_bytes))
-            img.verify()
-            return True, img.format.lower() if img.format else 'png'
-        except:
+        # 先检查数据长度
+        if len(image_bytes) < 100:
+            logger.error(f"❌ 图片数据太短: {len(image_bytes)} bytes")
             return False, None
+
+        # 兜底：如果数据是 base64 文本 bytes（如 iVBOR.../9j/），先解码为原始 bytes
+        try:
+            if image_bytes[:4] in (b'iVBO', b'/9j/'):
+                logger.warning("⚠️ 检测到 base64 文本 bytes，尝试解码为原始图片")
+                decoded = base64.b64decode(image_bytes)
+                if decoded:
+                    image_bytes = decoded
+        except Exception as e:
+            logger.warning(f"base64 解码失败: {e}")
+        
+        # 先根据 magic bytes 快速判断格式（避免 PIL 误判）
+        preview_hex = image_bytes[:16].hex()
+        logger.info(f"🔍 图片数据前缀(hex): {preview_hex}, 长度: {len(image_bytes)} bytes")
+        
+        if image_bytes[:3] == b'\xFF\xD8\xFF':
+            logger.info("✅ Magic bytes 检测: JPEG")
+            # 但仍需验证完整性
+            try:
+                img = Image.open(io.BytesIO(image_bytes))
+                img.load()
+                logger.info("✅ JPEG 完整性验证通过")
+                return True, 'jpeg'
+            except Exception as e:
+                logger.warning(f"JPEG 数据损坏: {e}")
+                return False, None
+                
+        if image_bytes[:4] == b'\x89PNG':
+            logger.info("✅ Magic bytes 检测: PNG")
+            # 但仍需验证完整性
+            try:
+                img = Image.open(io.BytesIO(image_bytes))
+                img.load()
+                logger.info("✅ PNG 完整性验证通过")
+                return True, 'png'
+            except Exception as e:
+                logger.warning(f"PNG 数据损坏: {e}")
+                return False, None
+
+        def _try_validate(raw_bytes: bytes) -> Tuple[bool, Optional[str]]:
+            try:
+                img = Image.open(io.BytesIO(raw_bytes))
+                img.load()
+                return True, img.format.lower() if img.format else 'png'
+            except Exception as e:
+                logger.warning(f"PIL 验证失败: {e}")
+                return False, None
+
+        is_valid, fmt = _try_validate(image_bytes)
+        if is_valid:
+            logger.info(f"✅ PIL 通用验证通过: {fmt}")
+            return True, fmt
+
+        # 记录调试信息（避免打印太长）
+        logger.warning(f"所有验证方式均失败，size={len(image_bytes)} bytes, head(hex)={preview_hex}")
+        return False, None
 
 
 # ==================== 提示词优化 ====================
@@ -346,24 +453,51 @@ def generate_with_gemini_image3(
         config = types.GenerateContentConfig(**config_params)
         
         # 调用 API
+        logger.info("开始调用模型")
         logger.info(f"📤 发送请求到 Google API...")
-        response = client.models.generate_content(
-            model='gemini-3-pro-image-preview',
-            contents=[types.Content(parts=parts, role='user')],
-            config=config
-        )
+        
+        # 添加重试逻辑处理 429 限流
+        max_retries = 3
+        retry_delay = 2  # 秒
+        
+        for attempt in range(1, max_retries + 1):
+            try:
+                response = client.models.generate_content(
+                    model='gemini-3-pro-image-preview',
+                    contents=[types.Content(parts=parts, role='user')],
+                    config=config
+                )
+                logger.info("模型调用完成")
+                break  # 成功则退出重试循环
+            except Exception as api_error:
+                error_str = str(api_error).lower()
+                is_rate_limit = "429" in str(api_error) or "too many" in error_str or "quota" in error_str
+                
+                if is_rate_limit and attempt < max_retries:
+                    wait_time = retry_delay * (2 ** (attempt - 1))  # 指数退避
+                    logger.warning(f"⚠️ 检测到限流 (429)，{wait_time}秒后重试 ({attempt}/{max_retries})")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    logger.error(f"❌ API 调用失败 (第 {attempt} 次): {api_error}")
+                    raise
         
         # 提取图片
+        logger.info("🔍 开始提取图片数据...")
         result = ImageProcessor.extract_from_response(response, mode_str)
         if not result:
+            logger.error(f"❌ 响应中没有图片数据")
             return {"error": True, "error_type": "NoImageInResponse",
                     "error_message": "响应中没有图片数据"}
         
         image_bytes, mime_type = result
+        logger.info(f"✅ 图片数据提取成功: {len(image_bytes)} bytes, mime={mime_type}")
         
         # 验证并编码
+        logger.info("🔍 开始验证图片数据...")
         is_valid, format_name = ImageProcessor.validate_and_encode(image_bytes)
         if not is_valid:
+            logger.error(f"❌ 图片数据验证失败")
             return {"error": True, "error_type": "InvalidImage",
                     "error_message": "生成的图片数据无效"}
         
@@ -380,23 +514,35 @@ def generate_with_gemini_image3(
         except:
             width, height = 0, 0
         
-        # 返回统一格式（与 handler 期望一致）
+        # 验证 image_bytes 类型
+        if not isinstance(image_bytes, bytes):
+            logger.error(f"❌ image_bytes 类型错误: {type(image_bytes)}")
+            return {"error": True, "error_type": "InvalidImageType",
+                    "error_message": f"image_bytes 必须是 bytes，实际为 {type(image_bytes)}"}
+        
+        logger.info(f"✅ 序列化检查通过")
+        
+        # 返回统一格式（与 handler 期望一致，所有字段都是可序列化的）
         return {
-            "image_bytes": image_bytes,
-            "mime_type": f"image/{format_name}",
-            "format": format_name or 'png',
-            "width": width,
-            "height": height
+            "image_bytes": image_bytes,  # bytes
+            "mime_type": f"image/{format_name}",  # str
+            "format": format_name or 'png',  # str
+            "width": width,  # int
+            "height": height  # int
         }
         
     except Exception as e:
-        logger.error(f"❌ [Gemini 3 Pro] 生成失败: {e}")
-        logger.error(traceback.format_exc())
+        error_type = type(e).__name__
+        error_message = str(e)
+        logger.error(f"❌ [Gemini 3 Pro] 生成失败: {error_message}")
+        logger.error(f"异常类型: {error_type}")
+        logger.error(f"完整堆栈:\n{traceback.format_exc()}")
+        
+        # ⚠️ 重要：不要在返回的字典中包含 traceback，因为它可能包含对象引用导致序列化失败
         return {
             "error": True,
-            "error_type": type(e).__name__,
-            "error_message": str(e),
-            "error_detail": traceback.format_exc()
+            "error_type": error_type,  # str
+            "error_message": error_message  # str
         }
 
 

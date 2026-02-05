@@ -30,8 +30,8 @@ def _get_genai_client():
         return None
     
     # 检查 Vertex AI 环境变量和服务账户凭据
-    vertex_ai_project = os.getenv("VERTEX_AI_PROJECT") or os.getenv("GOOGLE_CLOUD_PROJECT")
-    vertex_ai_location = os.getenv("VERTEX_AI_LOCATION") or os.getenv("GOOGLE_CLOUD_LOCATION", "global")
+    vertex_ai_project = (os.getenv("VERTEX_AI_PROJECT") or os.getenv("GOOGLE_CLOUD_PROJECT") or "").strip()
+    vertex_ai_location = (os.getenv("VERTEX_AI_LOCATION") or os.getenv("GOOGLE_CLOUD_LOCATION", "global") or "").strip()
     google_app_credentials = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
     
     # 强制使用 Vertex AI 模式

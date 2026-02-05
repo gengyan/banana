@@ -77,6 +77,8 @@ env/
 venv/
 ENV/
 .venv
+.venv_test/
+.venv*/
 
 # Node / build output
 node_modules/

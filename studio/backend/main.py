@@ -20,7 +20,11 @@ from log_utils import setup_logging_if_needed
 
 setup_logging_if_needed()
 logger = logging.getLogger("果捷后端")
-logger.info("✅ 日志系统初始化完成（同时输出到终端和文件）")
+
+# 版本管理
+from version import APP_VERSION
+
+logger.info(f"✅ 日志系统初始化完成（版本: {APP_VERSION}）")
 
 # 忽略警告
 warnings.filterwarnings('ignore')
@@ -123,7 +127,7 @@ else:
         genai_client = None
 
 # 创建 FastAPI 应用
-app = FastAPI(title="果捷后端服务", version="1.3.0")
+app = FastAPI(title="果捷后端服务", version=APP_VERSION)
 
 # 在应用启动时执行验证
 validate_environment_variables()
@@ -140,6 +144,9 @@ origins = [
     "https://gj.emaos.top",
     "http://gj.emaos.top/",
     "https://gj.emaos.top/",
+    "http://47.82.167.164",
+    "http://47.82.167.164:80",
+    "http://47.82.167.164:3000",
 ]
 
 # 从环境变量读取生产环境的前端地址（多个地址用逗号分隔）
@@ -221,7 +228,7 @@ async def root():
     return {
         "message": "果捷后端服务",
         "status": "running",
-        "version": "1.1.0"
+        "version": APP_VERSION
     }
 
 # ==================== 统一的 Banana Image 接口 ====================

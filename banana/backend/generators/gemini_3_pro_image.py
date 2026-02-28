@@ -10,9 +10,11 @@ import logging
 import traceback
 import io
 import time
+import re
 from pathlib import Path
 from typing import Optional, List, Tuple
 from PIL import Image
+from pydantic import ValidationError
 
 # ==================== 配置模块 ====================
 class EnvConfig:
@@ -96,6 +98,25 @@ class ProxyConfig:
 
 # ==================== 初始化 ====================
 logger = logging.getLogger("果捷后端")
+
+
+def _extract_core_error_message(error_msg: str) -> Optional[str]:
+    if not error_msg:
+        return None
+
+    match = re.search(r"\b(\d{3})\s+([A-Z_]+)\b", error_msg)
+    if match:
+        return f"{match.group(1)} {match.group(2)}"
+
+    code_match = re.search(r"['\"]code['\"]\s*:\s*(\d{3})", error_msg)
+    status_match = re.search(r"['\"]status['\"]\s*:\s*['\"]([A-Z_]+)['\"]", error_msg)
+    if code_match and status_match:
+        return f"{code_match.group(1)} {status_match.group(1)}"
+
+    if "RESOURCE_EXHAUSTED" in error_msg:
+        return "RESOURCE_EXHAUSTED"
+
+    return None
 env_file = EnvConfig.load_env()
 if env_file:
     logger.info(f"✅ [gemini_3_pro_image] 已加载环境: {env_file}")
@@ -149,7 +170,12 @@ class GeminiClient:
                 location=location,
                 http_options=http_options
             )
-            logger.info("✅ Vertex AI Client 创建成功")
+            
+            # 输出 google-genai 版本信息（用于诊断兼容性问题）
+            genai_version = getattr(genai_new, '__version__', 'unknown')
+            logger.info(f"✅ Vertex AI Client 创建成功")
+            logger.info(f"📦 google-genai 版本: {genai_version}")
+            
             return client
         except Exception as e:
             logger.error(f"❌ 创建 Client 失败: {e}")
@@ -277,7 +303,7 @@ class ImageProcessor:
             return None
     
     @staticmethod
-    def encode_pil_to_bytes(image: Image.Image, format: str = 'JPEG', quality: int = 85) -> bytes:
+    def encode_pil_to_bytes(image: Image.Image, format: str = 'JPEG', quality: int = 100) -> bytes:
         """将 PIL Image 编码为 bytes"""
         buffer = io.BytesIO()
         if image.mode != 'RGB' and format.upper() == 'JPEG':
@@ -429,7 +455,7 @@ def generate_with_gemini_image3(
         # 构建 parts
         parts = [types.Part.from_text(text=optimized_prompt)]
         
-        # 添加参考图
+        # 添加参考图（最多 14 张）
         if has_reference:
             for idx, ref_img in enumerate(reference_images[:14]):
                 img_bytes = ImageProcessor.encode_pil_to_bytes(ref_img)
@@ -444,42 +470,119 @@ def generate_with_gemini_image3(
             "max_output_tokens": 32768
         }
         
-        if aspect_ratio:
-            config_params["image_config"] = types.ImageConfig(aspect_ratio=aspect_ratio)
+        # 创建 ImageConfig - 防御性编程：自动适配 SDK 版本
+        def _create_image_config_safely(aspect_ratio_val, image_size_val):
+            """
+            防御性创建 ImageConfig
+            - 如果 SDK 支持所有参数，就全部传递（获得最佳效果）
+            - 如果 SDK 不支持某些参数，自动移除不支持的参数（保证不崩溃）
+            - 优先级：全参数 > 无 output_mime_type > 无 image_size > 仅 aspect_ratio > 无配置
+            """
+            # 尝试顺序：从最完整到最基础
+            param_sets = [
+                # 1. 完整参数（最理想）- 使用 JPEG 格式减小文件大小（2K 约 800KB vs PNG 6MB）
+                {"aspect_ratio": aspect_ratio_val, "image_size": image_size_val, "output_mime_type": "image/jpeg"},
+                # 2. 无 output_mime_type（常见情况）
+                {"aspect_ratio": aspect_ratio_val, "image_size": image_size_val},
+                # 3. 仅 aspect_ratio（保底方案）
+                {"aspect_ratio": aspect_ratio_val},
+                # 4. 空配置（最后选择）
+                {}
+            ]
+            
+            for idx, params in enumerate(param_sets):
+                # 过滤掉 None 值
+                params = {k: v for k, v in params.items() if v is not None}
+                if not params:  # 如果过滤后为空，跳到下一组
+                    continue
+                    
+                try:
+                    cfg = types.ImageConfig(**params)
+                    logger.info(f"✅ ImageConfig 创建成功 (方案{idx+1}): {list(params.keys())}")
+                    return cfg
+                except (ValidationError, TypeError) as e:
+                    logger.debug(f"🔄 方案{idx+1}失败: {list(params.keys())} - {str(e)[:100]}")
+                    continue
+            
+            # 所有方案都失败，返回 None（使用模型默认配置）
+            logger.warning(f"⚠️  无法创建 ImageConfig，将使用模型默认配置")
+            return None
         
-        # 注意：Gemini 3 Pro 的分辨率由模型自动决定，不能通过API指定
-        # image_size 参数仅用于日志记录，不传递给API
+        # 调用防御性函数
+        image_config = _create_image_config_safely(aspect_ratio, image_size)
+        if image_config:
+            config_params["image_config"] = image_config
         
         config = types.GenerateContentConfig(**config_params)
+        
+        # 使用 Gemini 3 Pro Image 模型（支持最多 14 张参考图）
+        model_name = "gemini-3-pro-image-preview"
+        logger.info(f"✅ 使用模型: {model_name}")
         
         # 调用 API
         logger.info("开始调用模型")
         logger.info(f"📤 发送请求到 Google API...")
         
-        # 添加重试逻辑处理 429 限流
-        max_retries = 3
-        retry_delay = 2  # 秒
+        def _is_rate_limited(err: Exception) -> bool:
+            message = str(err)
+            return "429" in message or "RESOURCE_EXHAUSTED" in message
         
-        for attempt in range(1, max_retries + 1):
+        def _is_validation_error(err: Exception) -> bool:
+            """检查是否是 Pydantic 验证错误（通常与参数不兼容有关）"""
+            error_type = type(err).__name__
+            message = str(err)
+            return error_type == "ValidationError" or "Extra inputs are not permitted" in message
+
+        max_attempts = int(os.getenv("GEMINI_RETRY_MAX", "3"))
+        base_delay = float(os.getenv("GEMINI_RETRY_BASE_SECONDS", "2"))
+        
+        response = None
+        last_error = None
+
+        for attempt in range(1, max_attempts + 1):
             try:
                 response = client.models.generate_content(
-                    model='gemini-3-pro-image-preview',
+                    model=model_name,
                     contents=[types.Content(parts=parts, role='user')],
                     config=config
                 )
                 logger.info("模型调用完成")
-                break  # 成功则退出重试循环
+                break
             except Exception as api_error:
-                error_str = str(api_error).lower()
-                is_rate_limit = "429" in str(api_error) or "too many" in error_str or "quota" in error_str
+                last_error = api_error
                 
-                if is_rate_limit and attempt < max_retries:
-                    wait_time = retry_delay * (2 ** (attempt - 1))  # 指数退避
-                    logger.warning(f"⚠️ 检测到限流 (429)，{wait_time}秒后重试 ({attempt}/{max_retries})")
-                    time.sleep(wait_time)
+                # 处理参数验证错误（如 image_size 不被支持）
+                if _is_validation_error(api_error) and attempt == 1:
+                    logger.warning(f"⚠️  检测到参数验证错误: {str(api_error)[:200]}")
+                    if "image_size" in str(api_error):
+                        logger.info(f"🔄 尝试移除 image_size 参数并重试...")
+                        # 重建配置，不包含 image_size
+                        image_config_params_fallback = {}
+                        if aspect_ratio:
+                            image_config_params_fallback["aspect_ratio"] = aspect_ratio
+                        image_config_params_fallback["output_mime_type"] = "image/jpeg"  # 使用 JPEG 减小文件大小
+                        
+                        try:
+                            config_params["image_config"] = types.ImageConfig(**image_config_params_fallback)
+                            config = types.GenerateContentConfig(**config_params)
+                            logger.info(f"✅ 已重建配置（无 image_size）")
+                            continue  # 重试 API 调用
+                        except Exception as fallback_error:
+                            logger.error(f"❌ 重建配置失败: {fallback_error}")
+                            raise api_error  # 抛出原始错误
+                
+                # 处理限流错误
+                if _is_rate_limited(api_error) and attempt < max_attempts:
+                    delay = min(base_delay * (2 ** (attempt - 1)), 30.0)
+                    logger.warning(f"⚠️ 触发限流，{delay:.1f}s 后重试 ({attempt}/{max_attempts})")
+                    time.sleep(delay)
+                    continue
+                
+                logger.error(f"❌ API 调用失败 (第 {attempt} 次尝试): {api_error}")
+                if attempt < max_attempts:
+                    time.sleep(base_delay)
                     continue
                 else:
-                    logger.error(f"❌ API 调用失败 (第 {attempt} 次): {api_error}")
                     raise
         
         # 提取图片
@@ -534,6 +637,9 @@ def generate_with_gemini_image3(
     except Exception as e:
         error_type = type(e).__name__
         error_message = str(e)
+        core_error = _extract_core_error_message(error_message)
+        if core_error:
+            error_message = core_error
         logger.error(f"❌ [Gemini 3 Pro] 生成失败: {error_message}")
         logger.error(f"异常类型: {error_type}")
         logger.error(f"完整堆栈:\n{traceback.format_exc()}")

@@ -5,6 +5,53 @@ import { useProject } from '../hooks/useProject'
 import { saveChatHistory, saveChatHistoryWithError } from '../utils/chatHistorySaver'
 import ImageEditor from '../components/ImageEditor'
 
+const extractCoreErrorMessage = (value) => {
+  if (!value) return null
+  const text = String(value)
+  const match = text.match(/\b(\d{3})\s+([A-Z_]+)\b/)
+  if (match) {
+    return `${match[1]} ${match[2]}`
+  }
+  const codeMatch = text.match(/['\"]code['\"]\s*:\s*(\d{3})/)
+  const statusMatch = text.match(/['\"]status['\"]\s*:\s*['\"]([A-Z_]+)['\"]/) 
+  if (codeMatch && statusMatch) {
+    return `${codeMatch[1]} ${statusMatch[1]}`
+  }
+  if (text.includes('RESOURCE_EXHAUSTED')) {
+    return 'RESOURCE_EXHAUSTED'
+  }
+  return null
+}
+
+const parseErrorPayload = async (payload) => {
+  if (!payload) return null
+
+  if (payload instanceof ArrayBuffer) {
+    try {
+      const decoder = new TextDecoder()
+      const text = decoder.decode(payload)
+      return JSON.parse(text)
+    } catch (parseError) {
+      return null
+    }
+  }
+
+  if (payload instanceof Blob) {
+    try {
+      const text = await payload.text()
+      return JSON.parse(text)
+    } catch (parseError) {
+      return null
+    }
+  }
+
+  if (typeof payload === 'object') {
+    return payload
+  }
+
+  return null
+}
+
 function Working() {
   const location = useLocation()
   const [message, setMessage] = useState('')
@@ -173,16 +220,61 @@ function Working() {
       
       // 检查是否是 axios 错误，可能包含后端返回的错误信息
       let errorMessage = '抱歉，发生了错误。请稍后重试。'
-      if (error.response && error.response.data) {
-        const errorData = error.response.data
-        errorMessage = errorData.error_message || errorData.detail || errorData.response || errorMessage
+      
+      // **优先级 0** (最优) ：从 axios 拦截器保存的 errorHeaders 中读取
+      if (error.errorHeaders?.message) {
+        errorMessage = error.errorHeaders.message
+        console.log('✅ 从 axios errorHeaders 中获取错误信息:', error.errorHeaders)
+      }
+      // **优先级 1**：从HTTP response headers中直接读取错误信息
+      else if (error.response && error.response.headers) {
+        const headers = error.response.headers
+        
+        // 尝试多种键名方式（因为axios可能以不同方式存储headers）
+        const headerErrorMessage = 
+          headers['x-error-message'] || 
+          headers['X-Error-Message'] ||
+          headers['X-ERROR-MESSAGE']
+        
+        const headerErrorCode = 
+          headers['x-error-code'] || 
+          headers['X-Error-Code'] ||
+          headers['X-ERROR-CODE']
+        
+        if (headerErrorMessage) {
+          errorMessage = headerErrorMessage
+          console.log('✅ 从HTTP response headers中获取错误信息:', {
+            code: headerErrorCode,
+            message: headerErrorMessage
+          })
+        }
+      }
+      
+      // 详细的调试日志
+      console.error('🔍 [Working] 错误处理流程:', {
+        '优先级0-errorHeaders': error.errorHeaders,
+        '优先级1-response.headers': error.response?.headers ? Object.keys(error.response.headers) : 'N/A',
+        '最终errorMessage': errorMessage,
+        'error.response.status': error.response?.status,
+        'error.message': error.message
+      })
+      
+      // **优先级 2**：从response body中读取错误信息
+      const hasHeaderError = errorMessage !== '抱歉，发生了错误。请稍后重试。'
+      if (!hasHeaderError && error.response && error.response.data) {
+        const errorData = await parseErrorPayload(error.response.data)
+        const coreError = extractCoreErrorMessage(
+          errorData?.error_message || errorData?.error_code || errorData?.detail || errorData?.response
+        )
+        errorMessage = coreError || errorData?.error_message || errorData?.detail || errorData?.response || errorMessage
         console.error('后端错误详情:', {
-          error_code: errorData.error_code,
-          error_message: errorData.error_message,
-          error_detail: errorData.error_detail,
-          detail: errorData.detail
+          error_code: errorData?.error_code,
+          error_message: errorData?.error_message,
+          error_detail: errorData?.error_detail,
+          detail: errorData?.detail
         })
-      } else if (error.message) {
+      } else if (!hasHeaderError && error.message) {
+        // **优先级 3**：使用 axios 原始 error message
         errorMessage = error.message
       }
       

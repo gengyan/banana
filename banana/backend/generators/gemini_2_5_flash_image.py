@@ -9,6 +9,7 @@ import base64
 import logging
 import traceback
 import io
+import re
 from pathlib import Path
 from typing import Optional, List, Tuple
 from PIL import Image
@@ -83,6 +84,25 @@ class ProxyConfig:
 
 # ==================== 初始化 ====================
 logger = logging.getLogger("果捷后端")
+
+
+def _extract_core_error_message(error_msg: str) -> Optional[str]:
+    if not error_msg:
+        return None
+
+    match = re.search(r"\b(\d{3})\s+([A-Z_]+)\b", error_msg)
+    if match:
+        return f"{match.group(1)} {match.group(2)}"
+
+    code_match = re.search(r"['\"]code['\"]\s*:\s*(\d{3})", error_msg)
+    status_match = re.search(r"['\"]status['\"]\s*:\s*['\"]([A-Z_]+)['\"]", error_msg)
+    if code_match and status_match:
+        return f"{code_match.group(1)} {status_match.group(1)}"
+
+    if "RESOURCE_EXHAUSTED" in error_msg:
+        return "RESOURCE_EXHAUSTED"
+
+    return None
 env_file = EnvConfig.load_env()
 if env_file:
     logger.info(f"✅ [gemini_2_5_flash_image] 已加载环境: {env_file}")
@@ -209,24 +229,89 @@ class ImageProcessor:
                 return None
             
             candidate = response.candidates[0]
-            if not hasattr(candidate, 'content') or not candidate.content.parts:
-                log_warning("图片提取", "candidate.content.parts 为空，无法提取图片")
+
+            # 兼容不同 SDK 结构，获取 parts
+            parts = None
+            if hasattr(candidate, 'content') and candidate.content is not None:
+                if hasattr(candidate.content, 'parts'):
+                    parts = candidate.content.parts
+                elif isinstance(candidate.content, dict):
+                    parts = candidate.content.get('parts')
+                elif isinstance(candidate.content, list):
+                    parts = candidate.content
+
+            if not parts:
+                try:
+                    finish_reason = getattr(candidate, "finish_reason", None)
+                    safety_ratings = getattr(candidate, "safety_ratings", None)
+                    prompt_feedback = getattr(response, "prompt_feedback", None)
+                    candidate_type = str(type(candidate))
+                    log_warning("图片提取", "candidate.content.parts 为空，无法提取图片", {
+                        "finish_reason": str(finish_reason),
+                        "safety_ratings": str(safety_ratings),
+                        "prompt_feedback": str(prompt_feedback),
+                        "candidate_type": candidate_type
+                    })
+                except Exception:
+                    log_warning("图片提取", "candidate.content.parts 为空，无法提取图片")
                 return None
             
-            for part in candidate.content.parts:
+            for part in parts:
+                try:
+                    part_type = getattr(part, "type", None)
+                    data_preview = None
+                    if hasattr(part, 'inline_data') and part.inline_data:
+                        data = part.inline_data.data
+                        data_preview = f"inline_data={type(data)}"
+                    else:
+                        data_preview = f"part={type(part)}"
+                    log_debug("图片提取", "遍历响应 part", {"part_type": part_type, "data": data_preview})
+                except Exception:
+                    pass
+
                 if hasattr(part, 'inline_data') and part.inline_data:
                     data = part.inline_data.data
                     mime_type = part.inline_data.mime_type
                     
-                    # 确保是 bytes
+                    # 规范化为 bytes
+                    if isinstance(data, memoryview):
+                        data = data.tobytes()
+                    if isinstance(data, bytearray):
+                        data = bytes(data)
+
+                    # str -> base64 解码
                     if isinstance(data, str):
                         try:
-                            data = base64.b64decode(data)
-                        except:
+                            decoded = base64.b64decode(data)
+                            if ImageProcessor.validate(decoded):
+                                return decoded, mime_type
+                        except Exception:
                             continue
                     
                     if isinstance(data, bytes):
-                        return data, mime_type
+                        # 先尝试直接验证
+                        if ImageProcessor.validate(data):
+                            return data, mime_type
+                        else:
+                            try:
+                                hex_preview = data[:32].hex()
+                                log_warning("图片提取", "图片校验失败，头部预览", {"len": len(data), "hex": hex_preview})
+                            except Exception:
+                                pass
+
+                        # 如果 bytes 实际是 base64(bytes)，尝试解码
+                        decoded = None
+                        try:
+                            decoded = base64.b64decode(data, validate=True)
+                        except Exception:
+                            try:
+                                decoded = base64.b64decode(data)
+                            except Exception:
+                                decoded = None
+
+                        if decoded and ImageProcessor.validate(decoded):
+                            log_warning("图片提取", "检测到 base64(bytes)，已解码为原始图片 bytes")
+                            return decoded, mime_type
             
             return None
         except Exception as e:
@@ -339,9 +424,15 @@ def generate_with_gemini_2_5_flash_image(
         
         # 配置
         config_params = {
-            "response_modalities": ["IMAGE"],
+            "response_modalities": [types.Modality.IMAGE],
             "temperature": 0.4,
-            "max_output_tokens": 8192
+            "max_output_tokens": 8192,
+            "safety_settings": [
+                types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="OFF"),
+                types.SafetySetting(category="HARM_CATEGORY_DANGEROUS_CONTENT", threshold="OFF"),
+                types.SafetySetting(category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="OFF"),
+                types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="OFF"),
+            ]
         }
         
         if aspect_ratio:
@@ -409,6 +500,9 @@ def generate_with_gemini_2_5_flash_image(
     except Exception as e:
         error_type = type(e).__name__
         error_message = str(e)
+        core_error = _extract_core_error_message(error_message)
+        if core_error:
+            error_message = core_error
         log_error("生成失败", f"Gemini 2.5 错误: {error_message}")
         logger.error(f"异常类型: {error_type}")
         logger.error(f"完整堆栈:\n{traceback.format_exc()}")

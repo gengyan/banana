@@ -8,11 +8,12 @@ const getApiBaseUrl = () => {
   // Vite 使用 import.meta.env 访问环境变量
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   
-  if (!apiUrl) {
+  // 空值 = 同源，通过 Vite 代理转发（开发环境避免直连超时）
+  if (apiUrl === undefined || apiUrl === null) {
     throw new Error('VITE_API_BASE_URL 环境变量未配置，请检查 .env 文件');
   }
   
-  return apiUrl;
+  return apiUrl || '';
 };
 
 export const API_BASE_URL = getApiBaseUrl();

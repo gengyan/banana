@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import UserLevelBadge from './UserLevelBadge'
-import packageJson from '../../package.json'
+import version from '../../version.json'
 
 function Layout() {
   const location = useLocation()
@@ -227,7 +227,7 @@ function Layout() {
 
       {/* 版本号 - 右下角 */}
       <div className="fixed bottom-14 right-4 z-[100] text-white/40 text-xs font-mono max-md:bottom-26 max-md:right-2">
-        v{packageJson.version}
+        v{version.version}
       </div>
     </div>
   )

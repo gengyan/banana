@@ -67,10 +67,10 @@ def validate_environment_variables():
             logger.info("🌐 检测到 Cloud Run 环境，尝试从元数据服务器获取项目 ID...")
             try:
                 import requests
-                # 从元数据服务器获取项目 ID
+                # 从元数据服务器获取项目 ID（使用非常短的超时，不要阻塞启动）
                 metadata_url = "http://metadata.google.internal/computeMetadata/v1/project/project-id"
                 headers = {"Metadata-Flavor": "Google"}
-                response = requests.get(metadata_url, headers=headers, timeout=2)
+                response = requests.get(metadata_url, headers=headers, timeout=1)
                 if response.status_code == 200:
                     project_id_from_metadata = response.text.strip()
                     logger.info(f"✅ 从元数据服务器获取到项目 ID: {project_id_from_metadata}")
@@ -80,9 +80,13 @@ def validate_environment_variables():
                     vertex_ai_project = project_id_from_metadata
                 else:
                     logger.warning(f"⚠️ 元数据服务器返回状态码: {response.status_code}")
+            except requests.exceptions.Timeout:
+                logger.warning("⚠️ 元数据服务器请求超时（预期行为，可能不在Cloud Run环境中）")
             except Exception as e:
                 logger.warning(f"⚠️ 无法从元数据服务器获取项目 ID: {str(e)}")
-                logger.warning("   这可能是正常的（如果不在 Cloud Run 环境中）")
+                logger.warning("   这通常意味着：")
+                logger.warning("   1) 已通过环境变量设置了项目ID")
+                logger.warning("   2) 或者某些环境变量配置不完整")
     
     # Fallback 机制：如果 VERTEX_AI_PROJECT 缺失，尝试读取 GOOGLE_CLOUD_PROJECT
     if not vertex_ai_project and google_cloud_project:

@@ -1,9 +1,15 @@
 # 本地调试启动脚本说明
 
-## 脚本文件
+## 果捷 Studio（本目录）
 
-- **`restart-with-proxy.sh`** - 本地调试用，**带代理启动**（针对需要代理才能访问 Google API 的环境）
-- **`restart.sh`** - 原始脚本，部署/生产环境用（不带代理）
+- **本地调试**：`./start.sh`（带代理启动前后端）
+- **境外部署**：`./restart.sh`（直连，不带代理）
+
+```bash
+cd studio
+./start.sh      # 本地调试（推荐）
+./restart.sh    # 境外部署
+```
 
 ## 使用场景
 
@@ -12,10 +18,8 @@
 如果你的网络需要代理才能访问 `aiplatform.googleapis.com`：
 
 ```bash
-cd /Users/mac/Documents/ai/knowledgebase/bananas/banana
-
-# 使用带代理的启动脚本
-./restart-with-proxy.sh
+cd studio
+./start.sh
 ```
 
 脚本会自动：
@@ -28,24 +32,24 @@ cd /Users/mac/Documents/ai/knowledgebase/bananas/banana
 3. 启动后端（带代理）
 4. 启动前端
 
-### 场景 2：部署/生产（不需要代理）
+### 场景 2：境外部署（不需要代理）
 
-在云服务器或无需代理的环境：
+服务器在境外，可直接访问 Google API：
 
 ```bash
-cd /Users/mac/Documents/ai/knowledgebase/bananas/banana
+cd studio
 
-# 使用原始启动脚本（无代理）
-DISABLE_PROXY=true ./restart.sh
+# 无代理启动
+./restart.sh
 ```
 
-或修改 `.env` 中的代理配置后使用原脚本。
+或在 `backend/.env` 中设置 `DISABLE_PROXY=true`。
 
 ## 代理配置说明
 
 ### 脚本内部代理配置
 
-`restart-with-proxy.sh` 硬编码了以下代理：
+`start.sh` 硬编码了以下代理：
 ```bash
 export HTTP_PROXY=http://127.0.0.1:29290
 export HTTPS_PROXY=http://127.0.0.1:29290
@@ -59,8 +63,8 @@ export DISABLE_PROXY=false
 
 **方式 1：修改脚本**
 ```bash
-# 编辑 restart-with-proxy.sh
-# 将第 15-18 行的代理地址改为你的代理地址，例如：
+# 编辑 start.sh
+# 将代理地址改为你的，例如：
 export HTTP_PROXY=http://proxy.example.com:8080
 export HTTPS_PROXY=http://proxy.example.com:8080
 ```
@@ -69,7 +73,7 @@ export HTTPS_PROXY=http://proxy.example.com:8080
 ```bash
 HTTP_PROXY=http://your-proxy:port \
 HTTPS_PROXY=http://your-proxy:port \
-./restart-with-proxy.sh
+./start.sh
 ```
 
 ### 如果代理需要认证
@@ -77,7 +81,7 @@ HTTPS_PROXY=http://your-proxy:port \
 ```bash
 export HTTP_PROXY=http://username:password@127.0.0.1:29290
 export HTTPS_PROXY=http://username:password@127.0.0.1:29290
-./restart-with-proxy.sh
+./start.sh
 ```
 
 ## 后端代码中的代理支持
@@ -99,10 +103,10 @@ http_options = genai.types.HttpOptions(
 
 ```bash
 # 查看后端日志（带代理信息）
-tail -f /Users/mac/Documents/ai/knowledgebase/bananas/banana/backend.log
+tail -f studio/backend.log
 
 # 查看前端日志
-tail -f /Users/mac/Documents/ai/knowledgebase/bananas/banana/frontend.log
+tail -f studio/frontend.log
 ```
 
 ## 停止服务
@@ -138,7 +142,7 @@ ProxyError: Unable to connect to proxy...
 
 检查后端日志：
 ```bash
-grep -i "proxy\|error" /Users/mac/Documents/ai/knowledgebase/bananas/banana/backend.log | tail -20
+grep -i "proxy\|error" studio/backend.log | tail -20
 ```
 
 ### 在部署环境禁用代理
@@ -147,6 +151,6 @@ grep -i "proxy\|error" /Users/mac/Documents/ai/knowledgebase/bananas/banana/back
 # 在 .env 中添加或修改
 DISABLE_PROXY=true
 
-# 或启动时：
-DISABLE_PROXY=true ./restart.sh
+# 或启动时（境外部署）：
+./restart.sh
 ```

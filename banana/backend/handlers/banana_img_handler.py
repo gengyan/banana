@@ -4,6 +4,7 @@ Banana Image 请求处理器 - 统一图像生成接口
 """
 import io
 import time
+import re
 from typing import Optional, List, Tuple, Dict, Any
 from fastapi import Request, UploadFile
 from PIL import Image
@@ -242,19 +243,33 @@ class ResponseBuilder:
     @staticmethod
     def build_error_response(error_code: str, error_message: str, 
                             request_id: str, status_code: int = 500) -> Tuple[Dict[str, Any], int]:
-        """构建错误响应"""
+        """构建错误响应，同时在 headers 中返回错误信息"""
         log_error("请求失败", error_message, {"错误码": error_code, "请求": request_id})
         
         return {
             "success": False,
             "error_code": error_code,
-            "error_message": error_message
+            "error_message": error_message,
+            "x-error-code": error_code,
+            "x-error-message": error_message,
+            "x-request-id": request_id
         }, status_code
     
     @staticmethod
     def handle_generator_error(image_data: Dict[str, Any], request_id: str) -> Tuple[Dict[str, Any], int]:
         """处理生成器返回的错误对象"""
-        err_code = (image_data.get("error_code") or "UNKNOWN_ERROR").upper()
+        # ⚠️ 关键修复：生成器返回 error_type，不是 error_code
+        # 优先使用 error_code（如果存在），其次使用 error_type
+        err_code = image_data.get("error_code") or image_data.get("error_type") or "UNKNOWN_ERROR"
+        err_code = err_code.upper()
+        
+        raw_error_message = image_data.get("error_message", "未知错误")
+        core_error = ResponseBuilder._extract_core_error_message(raw_error_message)
+        error_message = core_error or raw_error_message
+        
+        # 如果从错误消息中提取到了核心错误（如 429 RESOURCE_EXHAUSTED），优先使用它
+        if core_error and err_code in {"UNKNOWN_ERROR", "INTERNAL_ERROR", "API_ERROR", "CLIENTERROR"}:
+            err_code = core_error
         
         # 映射 HTTP 状态码
         status_map = {
@@ -264,17 +279,54 @@ class ResponseBuilder:
             "CHUNKED_ENCODING_ERROR": 502,
             "SAFETY_BLOCKED": 400,
             "CLIENT_CREATION_FAILED": 500,
-            "MODULE_NOT_AVAILABLE": 500
+            "MODULE_NOT_AVAILABLE": 500,
+            "CLIENTERROR": 500
         }
         status = status_map.get(err_code, 500)
         
+        # 特殊处理 429 和 RESOURCE_EXHAUSTED
+        if core_error and core_error.startswith("429"):
+            status = 429
+        elif "RESOURCE_EXHAUSTED" in (core_error or "") or "RESOURCE_EXHAUSTED" in err_code:
+            status = 429
+            # 确保错误代码包含 429 标识
+            if not err_code.startswith("429"):
+                err_code = "429 RESOURCE_EXHAUSTED"
+        
         return ResponseBuilder.build_error_response(
             err_code,
-            image_data.get("error_message", "未知错误"),
+            error_message,
             request_id,
             status
         )
+    
+    def _extract_core_error_message(error_msg: str) -> Optional[str]:
+        """从错误消息中提取核心错误代码和状态"""
+        if not error_msg:
+            return None
 
+        # 优先查找 "429 RESOURCE_EXHAUSTED" 这样的格式
+        match = re.search(r"\b(\d{3})\s+([A-Z_]+)\b", error_msg)
+        if match:
+            return f"{match.group(1)} {match.group(2)}"
+
+        # 查找 JSON 格式的代码和状态
+        code_match = re.search(r"['\"]code['\"]\s*:\s*(\d{3})", error_msg)
+        status_match = re.search(r"['\"]status['\"]\s*:\s*['\"]([A-Z_]+)['\"]", error_msg)
+        if code_match and status_match:
+            return f"{code_match.group(1)} {status_match.group(1)}"
+
+        # 查找 429 HTTP 状态码
+        if "429" in error_msg:
+            if "RESOURCE_EXHAUSTED" in error_msg:
+                return "429 RESOURCE_EXHAUSTED"
+            return "429"
+
+        # 单独查找 RESOURCE_EXHAUSTED
+        if "RESOURCE_EXHAUSTED" in error_msg:
+            return "RESOURCE_EXHAUSTED"
+
+        return None
 
 async def handle_banana_img_request(request: Request, 
                                      gemini_2_5_func, 

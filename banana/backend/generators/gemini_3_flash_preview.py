@@ -9,19 +9,42 @@ import logging
 import traceback
 import base64
 import io
+import os
+import re
 from typing import List, Optional, Union
 from pathlib import Path
 
 try:
     from google import genai
     from google.genai import types
+    GEMINI_NEW_AVAILABLE = True
 except ImportError:
-    import google.generativeai as genai
-    from google.api_core import exceptions as gexceptions
+    GEMINI_NEW_AVAILABLE = False
+    genai = None
+    types = None
 
 import google.api_core.exceptions as gexceptions
 
 logger = logging.getLogger("果捷后端")
+
+
+def _extract_core_error_message(error_msg: str) -> Optional[str]:
+    if not error_msg:
+        return None
+
+    match = re.search(r"\b(\d{3})\s+([A-Z_]+)\b", error_msg)
+    if match:
+        return f"{match.group(1)} {match.group(2)}"
+
+    code_match = re.search(r"['\"]code['\"]\s*:\s*(\d{3})", error_msg)
+    status_match = re.search(r"['\"]status['\"]\s*:\s*['\"]([A-Z_]+)['\"]", error_msg)
+    if code_match and status_match:
+        return f"{code_match.group(1)} {status_match.group(1)}"
+
+    if "RESOURCE_EXHAUSTED" in error_msg:
+        return "RESOURCE_EXHAUSTED"
+
+    return None
 
 
 def _prepare_image_part(image_data: Union[bytes, str, Path]) -> types.Part:
@@ -122,12 +145,45 @@ def chat(
         模型的文本回复，失败时返回友好的错误消息
     """
     try:
-        # 初始化客户端
+        # 初始化客户端（Vertex AI）
+        if not GEMINI_NEW_AVAILABLE:
+            logger.error("❌ google.genai 模块不可用，无法使用 Vertex AI")
+            return "抱歉，AI 服务暂时不可用，请稍后重试。"
+
+        project_id = (os.getenv("VERTEX_AI_PROJECT") or os.getenv("GOOGLE_CLOUD_PROJECT") or "").strip()
+        location = (os.getenv("VERTEX_AI_LOCATION", "global") or "").strip()
+        credentials = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+
+        if not project_id:
+            logger.error("❌ VERTEX_AI_PROJECT 未设置")
+            return "抱歉，AI 服务暂时不可用，请稍后重试。"
+
+        if not credentials:
+            logger.error("❌ GOOGLE_APPLICATION_CREDENTIALS 未设置")
+            return "抱歉，AI 服务暂时不可用，请稍后重试。"
+
+        # 处理相对路径的凭据
+        if credentials and not os.path.isabs(credentials):
+            backend_root = Path(__file__).parent.parent
+            candidate = (backend_root / credentials).resolve()
+            if candidate.exists():
+                credentials = str(candidate)
+
+        # 设置凭据环境变量
+        if credentials:
+            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = credentials
+
         try:
-            client = genai.Client()
+            http_options = types.HttpOptions(timeout=int(os.getenv('HTTP_TIMEOUT', '1200000')))
+            client = genai.Client(
+                vertexai=True,
+                project=project_id,
+                location=location,
+                http_options=http_options
+            )
             model_name = 'gemini-3-flash-preview'
         except Exception as e:
-            logger.error(f"❌ 初始化 Gemini 客户端失败: {e}")
+            logger.error(f"❌ 初始化 Vertex AI 客户端失败: {e}")
             return "抱歉，AI 服务暂时不可用，请稍后重试。"
         
         # 构建内容列表
@@ -217,6 +273,10 @@ def chat(
                 
             except gexceptions.ServiceUnavailable as e:
                 error_msg = str(e)
+                core_error = _extract_core_error_message(error_msg)
+                if core_error:
+                    logger.warning(f"⚠️ Gemini 3 错误: {core_error}")
+                    return core_error
                 if attempt < max_retries - 1:
                     logger.warning(f"⚠️ 请求失败 (尝试 {attempt + 1}/{max_retries})，{retry_delay}秒后重试: {error_msg[:100]}")
                     time.sleep(retry_delay)
@@ -230,6 +290,10 @@ def chat(
                         
             except gexceptions.RetryError as e:
                 error_msg = str(e)
+                core_error = _extract_core_error_message(error_msg)
+                if core_error:
+                    logger.warning(f"⚠️ Gemini 3 错误: {core_error}")
+                    return core_error
                 if attempt < max_retries - 1:
                     logger.warning(f"⚠️ 请求失败 (尝试 {attempt + 1}/{max_retries})，{retry_delay}秒后重试: {error_msg[:100]}")
                     time.sleep(retry_delay)
@@ -248,6 +312,9 @@ def chat(
         logger.error(f"❌ 聊天失败: {e}")
         logger.error(traceback.format_exc())
         
+        core_error = _extract_core_error_message(error_msg)
+        if core_error:
+            return core_error
         if "Timeout" in error_msg or "timeout" in error_msg.lower():
             return "抱歉，请求超时，可能是网络问题。请检查网络连接后重试。"
         elif "503" in error_msg or "ServiceUnavailable" in error_msg:

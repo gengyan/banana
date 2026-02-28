@@ -21,7 +21,7 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://localhost:8080',
         changeOrigin: true,
       },
       // SD3.5 代理配置（现在指向远程 HTTPS 服务器）

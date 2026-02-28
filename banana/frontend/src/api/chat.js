@@ -9,9 +9,7 @@
  * - 模式映射：支持多种模式别名，便于扩展
  */
 
-import axios from 'axios'
-import client from './client'
-import { API_BASE_URL } from '../config/api'
+import client, { getAuthHeaders } from './client'
 import logger from '../utils/logger'
 import { saveImageBlob } from '../utils/indexedDBStorage'
 
@@ -195,17 +193,17 @@ const processWithFormData = async (message, referenceImages, endpoint, mode, mod
     })
   }
 
-  const response = await axios.post(`${API_BASE_URL}${endpoint}`, formData, {
-    headers: {
+  const response = await client.post(endpoint, formData, {
+    headers: getAuthHeaders({
       // ⚠️ 让浏览器自动生成 multipart boundary，避免手动设置导致文件被忽略
       'Accept': 'application/json,image/*,text/plain'
-    },
+    }),
     // ⚠️ 关键修复：设置 responseType 为 'arraybuffer' 以便正确接收 Blob 响应
     // axios 会根据 Content-Type 自动判断：
     // - Content-Type: image/* → 转换为 Blob
     // - Content-Type: application/json → 保持为对象
     responseType: 'arraybuffer',
-    timeout: 300000,
+    timeout: 600000, // 10分钟超时（与全局配置保持一致，2K/4K 图片生成可能需要较长时间）
     maxContentLength: 50 * 1024 * 1024,
     maxBodyLength: 50 * 1024 * 1024,
   })
@@ -284,8 +282,8 @@ const processWithJson = async (message, endpoint, mode, modelVersion, options = 
   // banana-img 接口返回二进制图片数据（不是JSON），必须用 blob 类型
   const response = await client.post(endpoint, payload, {
     responseType: 'blob',
-    headers: { Accept: 'application/json,image/*,text/plain' },
-    timeout: 300000,
+    headers: getAuthHeaders({ Accept: 'application/json,image/*,text/plain' }),
+    timeout: 600000, // 10分钟超时（与全局配置保持一致，2K/4K 图片生成可能需要较长时间）
     maxContentLength: 50 * 1024 * 1024,
     maxBodyLength: 50 * 1024 * 1024,
   })
@@ -469,12 +467,12 @@ const chatOnly = async (message, referenceImages = null, options = {}) => {
           if (image) formData.append('reference_images', image)
         })
         
-        const response = await axios.post(`${API_BASE_URL}/api/chat-with-images`, formData, {
-          headers: {
+        const response = await client.post('/api/chat-with-images', formData, {
+          headers: getAuthHeaders({
             // 让 axios 自动设置 multipart/form-data + boundary
             // 不要设置 Content-Type，让 FormData 处理
-          },
-          timeout: 300000,
+          }),
+          timeout: 600000, // 10分钟超时（与全局配置保持一致）
           maxContentLength: 50 * 1024 * 1024,
           maxBodyLength: 50 * 1024 * 1024,
         })

@@ -7,19 +7,62 @@ import re
 import time
 import logging
 import traceback
+import os
+from pathlib import Path
 import google.api_core.exceptions as gexceptions
-import google.generativeai as genai
 
-# 尝试导入 GenerationConfig（如果可用）
 try:
-    from google.generativeai.types import GenerationConfig
-    GENERATION_CONFIG_AVAILABLE = True
-except (ImportError, AttributeError):
-    GENERATION_CONFIG_AVAILABLE = False
-    logger = logging.getLogger("果捷后端")
-    logger.warning("⚠️ GenerationConfig 不可用，翻译时将仅依赖指令确保精准度")
+    from google import genai
+    from google.genai import types
+    GEMINI_NEW_AVAILABLE = True
+except ImportError:
+    GEMINI_NEW_AVAILABLE = False
+    genai = None
+    types = None
 
 logger = logging.getLogger("果捷后端")
+
+
+def _create_vertex_client():
+    """创建 Vertex AI Client（文本生成）"""
+    if not GEMINI_NEW_AVAILABLE:
+        logger.error("❌ google.genai 模块不可用，无法使用 Vertex AI")
+        return None
+
+    project_id = (os.getenv("VERTEX_AI_PROJECT") or os.getenv("GOOGLE_CLOUD_PROJECT") or "").strip()
+    location = (os.getenv("VERTEX_AI_LOCATION", "global") or "").strip()
+    credentials = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+
+    if not project_id:
+        logger.error("❌ VERTEX_AI_PROJECT 未设置")
+        return None
+
+    if not credentials:
+        logger.error("❌ GOOGLE_APPLICATION_CREDENTIALS 未设置")
+        return None
+
+    if credentials and not os.path.isabs(credentials):
+        backend_root = Path(__file__).parent.parent
+        candidate = (backend_root / credentials).resolve()
+        if candidate.exists():
+            credentials = str(candidate)
+
+    if credentials:
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = credentials
+
+    try:
+        http_options = types.HttpOptions(timeout=int(os.getenv('HTTP_TIMEOUT', '1200000')))
+        client = genai.Client(
+            vertexai=True,
+            project=project_id,
+            location=location,
+            http_options=http_options
+        )
+        logger.info("✅ Vertex AI Client 初始化成功（提示词优化）")
+        return client
+    except Exception as e:
+        logger.error(f"❌ Vertex AI Client 初始化失败: {e}")
+        return None
 
 
 def optimize_prompt(prompt: str) -> str:
@@ -42,10 +85,8 @@ def optimize_prompt(prompt: str) -> str:
     try:
         # 使用 gemini-2.0-flash-exp 模型
         model_name = 'gemini-2.0-flash-exp'
-        try:
-            model = genai.GenerativeModel(model_name)
-        except Exception as e:
-            logger.error(f"❌ 模型 {model_name} 不可用: {e}")
+        client = _create_vertex_client()
+        if not client:
             logger.warning("⚠️ 提示词优化失败，使用原始提示词")
             return prompt
         
@@ -79,40 +120,22 @@ def optimize_prompt(prompt: str) -> str:
                     # ⚠️ 尝试使用 generation_config 参数设置低 temperature (0.0) 确保翻译精准
                     # 如果 API 不支持 generation_config，将仅依赖翻译指令确保精准度
                     try:
-                        if GENERATION_CONFIG_AVAILABLE:
-                            # 使用 GenerationConfig 对象
-                            response = model.generate_content(
-                                optimization_request,
-                                generation_config=GenerationConfig(
-                                    temperature=0.0,  # 最低温度，确保翻译最精准、一致（不添加额外内容）
-                                    top_p=0.7,  # 降低随机性
-                                    top_k=20,  # 限制候选词数量，减少变化
-                                )
+                        response = client.models.generate_content(
+                            model=model_name,
+                            contents=optimization_request,
+                            config=types.GenerateContentConfig(
+                                temperature=0.0,
+                                top_p=0.7,
+                                top_k=20,
                             )
-                            logger.info(f"✅ 使用 GenerationConfig (temperature=0.0) 确保精准翻译")
-                        else:
-                            # GenerationConfig 不可用，尝试字典格式
-                            try:
-                                response = model.generate_content(
-                                    optimization_request,
-                                    generation_config={
-                                        'temperature': 0.0,  # 最低温度，确保翻译最精准、一致
-                                        'top_p': 0.7,  # 降低随机性
-                                        'top_k': 20,  # 限制候选词数量
-                                    }
-                                )
-                                logger.info(f"✅ 使用字典格式 generation_config (temperature=0.0) 确保精准翻译")
-                            except (TypeError, AttributeError) as dict_error:
-                                # 如果字典格式也不支持，仅使用指令确保精准翻译
-                                logger.warning(f"⚠️ generation_config 参数不支持，仅依赖翻译指令确保精准翻译")
-                                logger.warning(f"   错误: {dict_error}")
-                                logger.warning(f"   💡 翻译精准度将完全依赖指令，不依赖 temperature 参数")
-                                response = model.generate_content(optimization_request)
+                        )
+                        logger.info("✅ 使用低温度配置确保精准翻译")
                     except Exception as config_error:
-                        # 如果所有方式都失败，仅使用指令确保精准翻译
-                        logger.warning(f"⚠️ 设置 generation_config 失败，仅依赖翻译指令: {config_error}")
-                        logger.warning(f"   💡 翻译精准度将完全依赖指令，不依赖 temperature 参数")
-                        response = model.generate_content(optimization_request)
+                        logger.warning(f"⚠️ 设置生成参数失败，仅依赖翻译指令: {config_error}")
+                        response = client.models.generate_content(
+                            model=model_name,
+                            contents=optimization_request
+                        )
                 else:
                     # 优化模式：润色提示词，使其更详细、具体，适合图片生成
                     # 重要：优化后的提示词必须在150字以内（中文字符数）
@@ -130,9 +153,12 @@ def optimize_prompt(prompt: str) -> str:
 原始提示词：{prompt}
 
 优化后的提示词（150字以内）："""
-                    response = model.generate_content(optimization_request)
+                    response = client.models.generate_content(
+                        model=model_name,
+                        contents=optimization_request
+                    )
                 
-                optimized_prompt = response.text.strip()
+                optimized_prompt = response.text.strip() if response and hasattr(response, 'text') else ""
                 
                 logger.info(f"📝 文本模型返回的原始结果: {optimized_prompt[:150]}...")
                 

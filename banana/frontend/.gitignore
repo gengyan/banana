@@ -23,12 +23,12 @@ dist-ssr
 *.sln
 *.sw?
 
-# Environment variables (保留示例文件)
+# Environment variables (保留示例文件，含 API 地址的勿提交)
 .env
 .env.local
+.env.development
 .env.development.local
 .env.test.local
+.env.production
 .env.production.local
 !.env.example
-!.env.development
-!.env.production

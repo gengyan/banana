@@ -10,17 +10,31 @@ logger = logging.getLogger("果捷后端")
 def setup_proxy():
     """
     配置代理（需要在导入 Google API 之前处理）
-    
-    ⚠️ 重要：在 Cloud Run 环境中，必须关闭代理，避免干扰
+
+    本地调试：用 ./start.sh，会 export HTTP_PROXY，或走「本地开发」默认 127.0.0.1:29290
+    服务器/Docker：强制禁用代理，直连 Google API
     """
-    # 检测是否在 Cloud Run 环境（通过 K_SERVICE 环境变量）
+    proxy_keys = ['HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy', 'ALL_PROXY', 'all_proxy']
+
+    # 检测 Docker 容器（/.dockerenv 或 /run/.containerenv）
+    is_docker = os.path.exists('/.dockerenv') or os.path.exists('/run/.containerenv')
     is_cloud_run = bool(os.getenv('K_SERVICE'))
-    disable_proxy = os.getenv("DISABLE_PROXY", "").lower() == "true"  # 只检查显式设置为 true 的情况
+
+    # Docker/Podman/Cloud Run：强制清除代理，直连（服务器无本地代理）
+    if is_docker or is_cloud_run:
+        os.environ["DISABLE_PROXY"] = "true"  # 供 generators 识别
+        for key in proxy_keys:
+            os.environ.pop(key, None)
+        print("✅ 代理已禁用（Docker/Cloud Run 环境），直接连接")
+        return
+    # 本地环境
+    disproxy_val = os.getenv("DISABLE_PROXY", "").strip()
+    disable_proxy = disproxy_val.lower() == "true"
     use_proxy_flag = os.getenv("USE_PROXY", "").lower() == "true"
     use_socks5_proxy = os.getenv("USE_SOCKS5_PROXY", "").lower() == "true"
 
-    if disable_proxy or is_cloud_run:
-        print("✅ 代理已禁用（Cloud Run 环境或 DISABLE_PROXY=true），直接连接")
+    if disable_proxy:
+        print("✅ 代理已禁用（DISABLE_PROXY=true），直接连接")
         # 清除所有代理环境变量（包括从 .env 文件加载的）
         proxy_keys = ['HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy', 'ALL_PROXY', 'all_proxy']
         for key in proxy_keys:

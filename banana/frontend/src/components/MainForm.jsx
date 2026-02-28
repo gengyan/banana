@@ -135,17 +135,32 @@ export default function MainForm({
               }}
               disabled={loading || !isImageMode}
             >
+              {/* 动态长宽比：Imagen 使用专属集合，其他模型保留现有选项 */}
               <option value="auto">{t('home.auto', 'Auto')}</option>
-              <option value="1:1">1:1</option>
-              <option value="2:3">2:3</option>
-              <option value="3:2">3:2</option>
-              <option value="3:4">3:4</option>
-              <option value="4:3">4:3</option>
-              <option value="4:5">4:5</option>
-              <option value="5:4">5:4</option>
-              <option value="9:16">9:16</option>
-              <option value="16:9">16:9</option>
-              <option value="21:9">21:9</option>
+              {mode === 'imagen' ? (
+                // Imagen 支持的宽高比列表（按产品要求）
+                <>
+                  <option value="1:1">1:1</option>
+                  <option value="16:9">16:9</option>
+                  <option value="9:16">9:16</option>
+                  <option value="4:3">4:3</option>
+                  <option value="3:4">3:4</option>
+                </>
+              ) : (
+                // 其它模型的通用选项（保持原有行为）
+                <>
+                  <option value="1:1">1:1</option>
+                  <option value="2:3">2:3</option>
+                  <option value="3:2">3:2</option>
+                  <option value="3:4">3:4</option>
+                  <option value="4:3">4:3</option>
+                  <option value="4:5">4:5</option>
+                  <option value="5:4">5:4</option>
+                  <option value="9:16">9:16</option>
+                  <option value="16:9">16:9</option>
+                  <option value="21:9">21:9</option>
+                </>
+              )}
             </select>
 
             {/* 分辨率选择 - banana模式下隐藏（只支持1K） */}
@@ -163,9 +178,27 @@ export default function MainForm({
                 }}
                 disabled={loading || !isImageMode}
               >
-                <option value="1K">1K</option>
-                <option value="2K">2K</option>
-                <option value="4K">4K</option>
+                {/* 根据模型展示分辨率选项：Imagen 仅显示 1K/2K，Gemini Pro 显示 4K，其他保留原样 */}
+                {mode === 'imagen' && (
+                  <>
+                    <option value="1K">1K</option>
+                    <option value="2K">2K</option>
+                  </>
+                )}
+                {mode === 'banana_pro' && (
+                  <>
+                    <option value="1K">1K</option>
+                    <option value="2K">2K</option>
+                    <option value="4K">4K</option>
+                  </>
+                )}
+                {mode !== 'imagen' && mode !== 'banana_pro' && (
+                  <>
+                    <option value="1K">1K</option>
+                    <option value="2K">2K</option>
+                    <option value="4K">4K</option>
+                  </>
+                )}
               </select>
             )}
           </div>

@@ -20,6 +20,10 @@ COPY . .
 # 确保更新脚本可执行
 RUN chmod +x update-build-time.sh 2>/dev/null || true
 
+# 可选：覆盖 VITE_API_BASE_URL（用于本地 Docker 测试）
+ARG VITE_API_BASE_URL
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+
 # 核心：执行构建，生成静态文件
 # 确保您的 package.json 中有 "build": "vite build"
 # 清理所有可能的缓存，确保每次都是全新构建

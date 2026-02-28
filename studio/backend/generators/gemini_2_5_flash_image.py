@@ -10,7 +10,7 @@ import logging
 import traceback
 import io
 from pathlib import Path
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Union
 from PIL import Image
 
 # 结构化日志工具
@@ -163,6 +163,59 @@ class GeminiClient:
 # ==================== 图片处理工具 ====================
 class ImageProcessor:
     """图片处理工具（单一职责）"""
+
+    @staticmethod
+    def _looks_like_base64_text(text: str) -> bool:
+        if not text or len(text) % 4 != 0:
+            return False
+        base64_chars = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=\n\r")
+        return all(ch in base64_chars for ch in text)
+
+    @staticmethod
+    def _decode_base64_to_bytes(text: str) -> Optional[bytes]:
+        try:
+            decoded = base64.b64decode(text, validate=True)
+            return decoded
+        except Exception:
+            try:
+                return base64.b64decode(text)
+            except Exception:
+                return None
+
+    @staticmethod
+    def _is_image_magic(raw: bytes) -> bool:
+        return (
+            raw.startswith(b"\xFF\xD8\xFF") or
+            raw.startswith(b"\x89PNG") or
+            raw.startswith(b"GIF87a") or
+            raw.startswith(b"GIF89a") or
+            (raw.startswith(b"RIFF") and b"WEBP" in raw[:12])
+        )
+
+    @staticmethod
+    def normalize_image_bytes(image_data: Union[bytes, str]) -> Optional[bytes]:
+        """将可能的 base64 文本归一化为原始图片 bytes"""
+        if isinstance(image_data, bytes):
+            if ImageProcessor._is_image_magic(image_data):
+                return image_data
+            try:
+                text = image_data.decode('ascii')
+                if ImageProcessor._looks_like_base64_text(text):
+                    decoded = ImageProcessor._decode_base64_to_bytes(text)
+                    if decoded and ImageProcessor._is_image_magic(decoded):
+                        log_warning("图片归一化", "检测到 base64(bytes)，已解码为原始图片")
+                        return decoded
+            except Exception:
+                pass
+            return image_data
+
+        if isinstance(image_data, str):
+            if ImageProcessor._looks_like_base64_text(image_data):
+                decoded = ImageProcessor._decode_base64_to_bytes(image_data)
+                if decoded and ImageProcessor._is_image_magic(decoded):
+                    log_warning("图片归一化", "检测到 base64(str)，已解码为原始图片")
+                    return decoded
+        return None
     
     @staticmethod
     def detect_format(image_bytes: bytes) -> str:
@@ -207,15 +260,17 @@ class ImageProcessor:
                     data = part.inline_data.data
                     mime_type = part.inline_data.mime_type
                     
-                    # 确保是 bytes
-                    if isinstance(data, str):
-                        try:
-                            data = base64.b64decode(data)
-                        except:
-                            continue
-                    
+                    # 兼容 base64 文本 / 原始 bytes
                     if isinstance(data, bytes):
+                        normalized = ImageProcessor.normalize_image_bytes(data)
+                        if normalized and ImageProcessor._is_image_magic(normalized):
+                            return normalized, mime_type
                         return data, mime_type
+                    elif isinstance(data, str):
+                        normalized = ImageProcessor.normalize_image_bytes(data)
+                        if normalized and ImageProcessor._is_image_magic(normalized):
+                            return normalized, mime_type
+                        return None
             
             return None
         except Exception as e:
@@ -354,6 +409,11 @@ def generate_with_gemini_2_5_flash_image(
                     "error_message": "响应中没有图片数据"}
         
         image_bytes, mime_type = result
+
+        # 归一化图片数据（兼容 base64 文本/bytes）
+        normalized_bytes = ImageProcessor.normalize_image_bytes(image_bytes)
+        if normalized_bytes:
+            image_bytes = normalized_bytes
         
         # 验证图片
         if not ImageProcessor.validate(image_bytes):
@@ -398,6 +458,24 @@ def generate_with_gemini_2_5_flash_image(
     except Exception as e:
         error_type = type(e).__name__
         error_message = str(e)
+        
+        # 检测 429 配额耗尽错误
+        is_quota_error = (
+            "429" in error_message or 
+            "RESOURCE_EXHAUSTED" in error_message or 
+            "quota" in error_message.lower() or
+            "rate limit" in error_message.lower()
+        )
+        
+        if is_quota_error:
+            log_error("配额耗尽", "Gemini 2.5 API配额已耗尽")
+            logger.warning(f"⏳ 建议：等待配额恢复或检查 https://aistudio.google.com/apikey")
+            return {
+                "error": True,
+                "error_type": "QuotaExhausted",
+                "error_message": "API 请求配额已耗尽。免费版限制：每分钟15次请求。请稍后重试或升级配额。"
+            }
+        
         log_error("生成失败", f"Gemini 2.5 错误: {error_message}")
         logger.error(f"异常类型: {error_type}")
         logger.error(f"完整堆栈:\n{traceback.format_exc()}")

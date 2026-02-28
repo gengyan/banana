@@ -38,6 +38,50 @@ client.interceptors.response.use(
       error.networkError = true
       error.friendlyMessage = '无法连接到后端服务，请检查后端服务是否已启动'
     }
+    
+    // ⚠️ 关键修复：捕获错误的 response headers 并保存到 error 对象中
+    // 这样即使在后续处理中丢失了 response 对象，我们仍然能访问到 headers
+    if (error.response?.headers) {
+      const headers = error.response.headers
+      
+      // 尝试所有可能的键名格式
+      const errorMessage = 
+        headers['x-error-message'] || 
+        headers['X-Error-Message'] ||
+        headers['X-ERROR-MESSAGE'] ||
+        headers['x-error-message'.toLowerCase()] ||
+        null
+      
+      const errorCode = 
+        headers['x-error-code'] || 
+        headers['X-Error-Code'] ||
+        headers['X-ERROR-CODE'] ||
+        null
+      
+      const requestId = 
+        headers['x-request-id'] || 
+        headers['X-Request-ID'] ||
+        null
+      
+      // 保存到 error 对象以便后续访问
+      error.errorHeaders = {
+        code: errorCode,
+        message: errorMessage,
+        requestId: requestId
+      }
+      
+      // 调试日志：显示原始headers对象和提取的值
+      console.log('[axios响应拦截器] 捕获到HTTP错误', {
+        'status': error.response.status,
+        'statusText': error.response.statusText,
+        'allHeaderKeys': Object.keys(headers),
+        'errorHeaders': error.errorHeaders,
+        'rawHeaders': JSON.stringify(headers)
+      })
+    } else {
+      console.log('[axios响应拦截器] 错误中没有response.headers')
+    }
+    
     return Promise.reject(error)
   }
 )

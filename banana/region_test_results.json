@@ -1,0 +1,53 @@
+{
+  "Americas": [
+    {
+      "region": "us-central1",
+      "status": "invalid_argument",
+      "error": "Missing key inputs argument! To use the Google AI API, provide (`api_key`) arguments. To use the Goo"
+    },
+    {
+      "region": "us-east4",
+      "status": "invalid_argument",
+      "error": "Missing key inputs argument! To use the Google AI API, provide (`api_key`) arguments. To use the Goo"
+    },
+    {
+      "region": "us-west1",
+      "status": "invalid_argument",
+      "error": "Missing key inputs argument! To use the Google AI API, provide (`api_key`) arguments. To use the Goo"
+    }
+  ],
+  "Asia Pacific": [
+    {
+      "region": "asia-east1",
+      "status": "invalid_argument",
+      "error": "Missing key inputs argument! To use the Google AI API, provide (`api_key`) arguments. To use the Goo"
+    },
+    {
+      "region": "asia-northeast1",
+      "status": "invalid_argument",
+      "error": "Missing key inputs argument! To use the Google AI API, provide (`api_key`) arguments. To use the Goo"
+    },
+    {
+      "region": "asia-southeast1",
+      "status": "invalid_argument",
+      "error": "Missing key inputs argument! To use the Google AI API, provide (`api_key`) arguments. To use the Goo"
+    }
+  ],
+  "Europe": [
+    {
+      "region": "europe-west1",
+      "status": "invalid_argument",
+      "error": "Missing key inputs argument! To use the Google AI API, provide (`api_key`) arguments. To use the Goo"
+    },
+    {
+      "region": "europe-west4",
+      "status": "invalid_argument",
+      "error": "Missing key inputs argument! To use the Google AI API, provide (`api_key`) arguments. To use the Goo"
+    },
+    {
+      "region": "europe-west9",
+      "status": "invalid_argument",
+      "error": "Missing key inputs argument! To use the Google AI API, provide (`api_key`) arguments. To use the Goo"
+    }
+  ]
+}

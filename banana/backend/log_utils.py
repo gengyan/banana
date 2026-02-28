@@ -19,10 +19,6 @@ def setup_logging_if_needed():
     """
     root_logger = logging.getLogger()
     
-    # 如果已经有处理器，说明日志已初始化
-    if root_logger.handlers:
-        return
-    
     root_logger.setLevel(logging.INFO)
     
     # 日志格式
@@ -31,23 +27,32 @@ def setup_logging_if_needed():
         datefmt='%Y-%m-%d %H:%M:%S'
     )
     
-    # 1. 终端输出
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(logging.INFO)
-    console_handler.setFormatter(log_format)
-    root_logger.addHandler(console_handler)
+    # 1. 终端输出（避免重复添加）
+    has_console = any(isinstance(h, logging.StreamHandler) for h in root_logger.handlers)
+    if not has_console:
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setLevel(logging.INFO)
+        console_handler.setFormatter(log_format)
+        root_logger.addHandler(console_handler)
     
     # 2. 文件输出（RotatingFileHandler）
     log_file = os.path.join(os.path.dirname(__file__), 'backend.log')
-    file_handler = RotatingFileHandler(
-        log_file,
-        maxBytes=10 * 1024 * 1024,  # 10MB
-        backupCount=5,
-        encoding='utf-8'
-    )
-    file_handler.setLevel(logging.INFO)
-    file_handler.setFormatter(log_format)
-    root_logger.addHandler(file_handler)
+    has_file = False
+    for h in root_logger.handlers:
+        if isinstance(h, RotatingFileHandler):
+            if getattr(h, 'baseFilename', None) == log_file:
+                has_file = True
+                break
+    if not has_file:
+        file_handler = RotatingFileHandler(
+            log_file,
+            maxBytes=10 * 1024 * 1024,  # 10MB
+            backupCount=5,
+            encoding='utf-8'
+        )
+        file_handler.setLevel(logging.INFO)
+        file_handler.setFormatter(log_format)
+        root_logger.addHandler(file_handler)
 
 
 # 日志级别配置（保留原有的 basicConfig 以兼容性考虑）

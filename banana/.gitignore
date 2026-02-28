@@ -41,10 +41,12 @@ lerna-debug.log*
 # Environment and secrets
 .env*
 !.env.example
+backend/env.example
 *.pem
 *.key
 backend/google-key.json
 backend/service-account*.json
+backend/gen-lang-client*.json
 backend/*kubeconfig*
 *.p12
 *.crt
@@ -59,6 +61,9 @@ backend/*kubeconfig*
 *.bak
 *.dump
 *.sql
+
+# 测试页面含默认密码（勿提交）
+backend/test_manager_login*.html
 
 # Test and coverage artifacts
 .pytest_cache/
@@ -86,8 +91,12 @@ dist/
 dist-ssr/
 *.local
 
+# 服务器 Nginx 配置（含域名等，勿提交）
+frontend/nginx.server.conf
+
 # Deployment scripts (local-use)
 deploy-*.sh
+fix-*.sh
 redeploy-*.sh
 redeploy-*.py
 package-*.sh
